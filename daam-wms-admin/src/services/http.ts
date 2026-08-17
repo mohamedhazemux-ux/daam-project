@@ -4,9 +4,15 @@ export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name = 'ApiError' }
 }
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem('daam-access-token')
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init, credentials: 'include',
-    headers: { Accept: 'application/json', ...init.headers },
+    headers: {
+      Accept: 'application/json',
+      ...(init.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init.headers,
+    },
   })
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string } | null

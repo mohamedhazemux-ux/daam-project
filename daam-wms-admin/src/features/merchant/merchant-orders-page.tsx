@@ -12,6 +12,7 @@ import { merchantSettingsService } from '@/services/merchant-settings.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { downloadCSV, money } from '@/lib/utils'
+import { printShippingLabelPDF } from '@/lib/pdf-utils'
 import { Download, Plus, Search, Trash2 } from 'lucide-react'
 export default function MerchantOrdersPage() {
   const qc = useQueryClient()
@@ -31,6 +32,17 @@ export default function MerchantOrdersPage() {
   const [fErr, setFErr] = useState('')
   const [viewing, setViewing] = useState<MerchantOrder | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const generateShippingLabel = (order: MerchantOrder) => {
+    printShippingLabelPDF({
+      orderNumber: order.ref,
+      customerName: order.cust,
+      shippingAddress: order.address,
+      merchantName: order.m,
+      trackingNumber: order.tracking || 'TRK-' + order.ref.replace(/\D/g, '').slice(-6),
+      date: order.date,
+    })
+    toast.success('تم تجهيز بوليصة الشحن بصيغة PDF')
+  }
   const create = useMutation({ mutationFn: () => merchantOrdersService.create(user!.store!, { ...form, shipResp: form.shipResp as 'منصة' | 'ذاتي', items }), onSuccess: () => { toast.success('تم إنشاء الطلب بنجاح'); invalidate(); setCreateOpen(false) } })
   const cancel = useMutation({ mutationFn: (ref: string) => merchantOrdersService.cancel(ref), onSuccess: () => { toast.success('تم إلغاء الطلب بنجاح'); invalidate(); setCancelling(null); setViewing(null) }, onError: e => toast.error((e as Error).message) })
   const onLabel = (f: File | null) => {
@@ -156,7 +168,7 @@ export default function MerchantOrdersPage() {
       </Modal>
       <Modal open={!!viewing} onClose={() => setViewing(null)} wide title={'تفاصيل الطلب — ' + (viewing?.ref ?? '')}
         footer={<>
-          {viewing?.shipResp === 'ذاتي' && viewing.label && <Button variant="outline" onClick={() => toast.success('تم تنزيل بوليصة الشحن الخاصة بالطلب')}><Download className="size-4" /> تنزيل بوليصة الشحن</Button>}
+          {viewing?.shipResp === 'ذاتي' && viewing.label && <Button variant="outline" onClick={() => generateShippingLabel(viewing)}><Download className="size-4" /> تنزيل بوليصة الشحن</Button>}
           {viewing?.status === 'معلق' && <Button variant="destructive" onClick={() => setCancelling(viewing.ref)}>إلغاء الطلب</Button>}
         </>}>
         {viewing && <>

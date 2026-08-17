@@ -1,7 +1,9 @@
 {
   "scripts": {
-    "build": "cd daam-wms-admin && npm install && npm run build",
-    "start": "cd daam-wms-admin && npm run preview -- --host 0.0.0.0"
+    "dev": "npm --prefix daam-wms-admin run dev",
+    "build": "npm --prefix daam-wms-admin run build",
+    "lint": "npm --prefix daam-wms-admin run lint",
+    "start": "npm --prefix daam-wms-admin run preview -- --host 0.0.0.0"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

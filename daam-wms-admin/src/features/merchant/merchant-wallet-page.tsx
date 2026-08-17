@@ -13,6 +13,7 @@ import { merchantFinanceService, type Tx } from '@/services/merchant-finance.ser
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { downloadCSV, money } from '@/lib/utils'
+import { printInvoicePDF } from '@/lib/pdf-utils'
 import { FileDown, Printer, Search, Wallet } from 'lucide-react'
 const KV = ({ k, v }: { k: string; v: React.ReactNode }) => <div className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>
 const TABS: [string, string][] = [['overview', 'نظرة عامة'], ['tx', 'سجل المعاملات'], ['wd', 'طلبات السحب'], ['subs', 'الاشتراكات'], ['inv', 'الفواتير الشهرية']]
@@ -297,6 +298,28 @@ function InvTab() {
   const { data, isLoading } = useQuery({ queryKey: ['m-inv', qp], queryFn: () => merchantFinanceService.invoices(qp) })
   const [viewing, setViewing] = useState<any>(null)
   const open = async (ref: string) => { const d = await merchantFinanceService.invoiceDetails(ref); setViewing(d) }
+  const generateInvoicePdf = (invoice: any) => {
+    if (!invoice) return
+    printInvoicePDF({
+      reference: invoice.ref,
+      period: invoice.period,
+      merchantName: invoice.m || user?.store || 'التاجر',
+      merchantEmail: invoice.email || user?.email || 'merchant@example.com',
+      items: (invoice.items ?? []).map((it: any) => ({
+        description: it.d || it.description || 'بند الفاتورة',
+        quantity: Number(it.q ?? it.quantity ?? 1),
+        unitPrice: Number(it.u ?? it.unitPrice ?? 0),
+        total: Number((it.q ?? it.quantity ?? 1) * (it.u ?? it.unitPrice ?? 0)),
+      })),
+      subtotal: Number((invoice.subtotal ?? invoice.total / 1.15) || 0),
+      tax: Number((invoice.tax ?? (invoice.total - (invoice.total / 1.15))) || 0),
+      total: Number(invoice.total ?? 0),
+      dueDate: invoice.due || invoice.dueDate || '',
+      createdAt: invoice.gen || invoice.createdAt || '',
+      status: invoice.status || 'مكتمل',
+    })
+    toast.success('تم تجهيز الفاتورة بصيغة PDF')
+  }
   const columns = [
     { accessorKey: 'ref', header: 'مرجع الفاتورة', cell: ({ row }: any) => <b dir="ltr">{row.original.ref}</b> },
     { accessorKey: 'period', header: 'فترة الفاتورة' },
@@ -307,8 +330,8 @@ function InvTab() {
     { id: 'actions', header: 'إجراءات', cell: ({ row }: any) => (
       <div className="flex gap-1">
         <Button size="sm" variant="outline" onClick={() => open(row.original.ref)}>عرض التفاصيل</Button>
-        <Button size="sm" variant="outline" onClick={() => toast.success('تم تنزيل الفاتورة بصيغة PDF')}><FileDown className="size-4" /> تنزيل PDF</Button>
-        <Button size="sm" variant="outline" onClick={() => toast.success('تم إرسال الفاتورة إلى الطابعة')}><Printer className="size-4" /> طباعة</Button>
+        <Button size="sm" variant="outline" onClick={() => generateInvoicePdf(row.original)}><FileDown className="size-4" /> تنزيل PDF</Button>
+        <Button size="sm" variant="outline" onClick={() => generateInvoicePdf(row.original)}><Printer className="size-4" /> طباعة</Button>
       </div>) },
   ] as ColumnDef<any, unknown>[]
   return (
@@ -356,5 +379,4 @@ function InvTab() {
     </div>
   )
 }
-
 
