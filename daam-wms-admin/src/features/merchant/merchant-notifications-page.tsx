@@ -11,15 +11,17 @@ import { merchantNotificationsService, type MNotif } from '@/services/merchant-n
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { Search } from 'lucide-react'
 import { getNotificationRoute } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth-store'
 
 export default function MerchantNotificationsPage() {
   const qc = useQueryClient()
+  const store = useAuthStore(s => s.user?.store)
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [type, setType] = useState('')
   const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
-  const qp = useMemo(() => ({ q: dq, type, page, pageSize: 10 }), [dq, type, page])
+  const qp = useMemo(() => ({ q: dq, type, page, pageSize: 10, store }), [dq, type, page, store])
   const { data, isLoading } = useQuery({ queryKey: ['m-notifs', qp], queryFn: () => merchantNotificationsService.list(qp), refetchInterval: 60_000 })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['m-notifs'] })
   const markAll = useMutation({ mutationFn: () => merchantNotificationsService.markAllRead(), onSuccess: () => { toast.success('تم تحديد جميع الإشعارات كمقروءة'); invalidate() } })

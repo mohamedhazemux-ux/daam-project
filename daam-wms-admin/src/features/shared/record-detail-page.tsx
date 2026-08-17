@@ -15,7 +15,7 @@ import { inventoryService } from '@/services/inventory.service'
 import { returnsService } from '@/services/returns.service'
 import { servicesService } from '@/services/services.service'
 
-type Kind = 'order' | 'merchant' | 'withdrawal' | 'invoice' | 'return' | 'stock-request' | 'service-request'
+type Kind = 'order' | 'merchant' | 'withdrawal' | 'invoice' | 'return' | 'stock-request' | 'service-request' | 'approval'
 type DetailConfig = { title: string; listPath: string; collection: object[]; idKey: string; labels: Record<string, string>; moneyKeys?: string[]; dateKeys?: string[]; statusKeys?: string[] }
 
 const PICKERS = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن']
@@ -28,6 +28,7 @@ const configs: Record<Kind, DetailConfig> = {
   return: { title: 'تفاصيل طلب الإرجاع', listPath: '/returns', collection: db.returns, idKey: 'ref', labels: { ref: 'مرجع الإرجاع', order: 'رقم الطلب', m: 'التاجر', cust: 'العميل', email: 'البريد الإلكتروني', count: 'عدد القطع', type: 'نوع الإرجاع', date: 'التاريخ', status: 'الحالة', reason: 'السبب', notes: 'الملاحظات', attachment: 'المرفقات' }, dateKeys: ['date'], statusKeys: ['status'] },
   'stock-request': { title: 'تفاصيل طلب المخزون', listPath: '/inventory/requests', collection: db.stockRequests, idKey: 'id', labels: { id: 'رقم الطلب', m: 'التاجر', p: 'المنتج', wh: 'المستودع', type: 'النوع', qty: 'الكمية', date: 'تاريخ الطلب', status: 'الحالة', notes: 'الملاحظات', attachment: 'المرفقات' }, dateKeys: ['date'], statusKeys: ['status', 'type'] },
   'service-request': { title: 'تفاصيل طلب الخدمة', listPath: '/services/requests', collection: db.serviceRequests, idKey: 'ref', labels: { ref: 'مرجع طلب الخدمة', m: 'التاجر', email: 'البريد الإلكتروني', type: 'نوع الخدمة', prod: 'المنتج', qty: 'الكمية', cost: 'التكلفة', urgency: 'الإلحاح', date: 'تاريخ الطلب', req: 'مقدم الطلب', status: 'الحالة', notes: 'الملاحظات', attachment: 'المرفقات' }, moneyKeys: ['cost'], dateKeys: ['date'], statusKeys: ['status', 'urgency'] },
+  approval: { title: 'تفاصيل الموافقة', listPath: '/approvals', collection: db.approvals, idKey: 'id', labels: { id: 'المعرف', type: 'النوع', urgency: 'الإلحاح', who: 'مقدم الطلب', title: 'الوصف', date: 'تاريخ الطلب', days: 'أيام التعليق', qty: 'الكمية', sourceRef: 'مرجع المصدر', requestedInfo: 'المعلومات المطلوبة', infoDeadline: 'موعد المعلومات', assignedTo: 'المسند إليه', assignmentReason: 'سبب الإسناد' }, dateKeys: ['date', 'infoDeadline'], statusKeys: ['urgency'] },
 }
 
 export default function RecordDetailPage() {
@@ -75,6 +76,15 @@ export default function RecordDetailPage() {
   if (!config || !record) return <div className="rounded-xl border bg-card p-8 text-center"><p className="font-bold">السجل غير موجود أو لم تعد لديك صلاحية للوصول إليه.</p><Button className="mt-4" onClick={() => navigate(config?.listPath ?? '/')}>العودة للقائمة</Button></div>
 
   const data = record as Record<string, unknown>
+  const sourceAttachments = kind === 'approval' && data.sourceRef ? (() => {
+    const ref = String(data.sourceRef)
+    if (ref.startsWith('SR-')) { const s = db.stockRequests.find(r => r.id === ref); return s?.attachment ? [s.attachment] : [] }
+    if (ref.startsWith('RET-')) { const s = db.returns.find(r => r.ref === ref); return s?.attachment ? [s.attachment] : [] }
+    if (ref.startsWith('WD-')) { const s = db.withdrawals.find(r => r.id === ref); return s?.attachment ? [s.attachment] : [] }
+    if (ref.startsWith('M-')) { const s = db.merchants.find(r => r.id === ref); return s?.attachments ?? [] }
+    if (ref.startsWith('SRV-')) { const s = db.serviceRequests.find(r => r.ref === ref); return s?.attachment ? [s.attachment] : [] }
+    return []
+  })() : null
   const printSlip = () => {
     if (kind !== 'order') return
     printPackingSlipPDF({
@@ -111,10 +121,10 @@ export default function RecordDetailPage() {
   const entries = Object.entries(config.labels).filter(([key]) => data[key] !== undefined && data[key] !== '')
   const activity = db.logs.filter(log => Object.values(data).some(value => typeof value === 'string' && log.desc.includes(value))).slice(0, 8)
   const attachmentList = (() => {
-    const raw = data.attachment ?? data.attachments
-    if (Array.isArray(raw)) return raw.filter(Boolean)
-    if (typeof raw === 'string') return raw.split(',').map(item => item.trim()).filter(Boolean)
-    return []
+    const ownRaw = data.attachment ?? data.attachments
+    const own: string[] = Array.isArray(ownRaw) ? ownRaw.filter(Boolean) : typeof ownRaw === 'string' ? ownRaw.split(',').map(item => item.trim()).filter(Boolean) : []
+    if (sourceAttachments && sourceAttachments.length > 0) return [...new Set([...own, ...sourceAttachments])]
+    return own
   })()
   const noteText = typeof data.notes === 'string' ? data.notes.trim() : ''
   const value = (key: string, raw: unknown) => {
@@ -157,7 +167,7 @@ export default function RecordDetailPage() {
         <h3 className="mb-4 text-sm font-black">الملاحظات والمرفقات</h3>
         <div className="space-y-4">
           {noteText ? <div><p className="mb-1 text-[11px] font-bold text-muted-foreground">الملاحظات</p><p className="rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{noteText}</p></div> : null}
-          {attachmentList.length > 0 ? <div><p className="mb-1 text-[11px] font-bold text-muted-foreground">المرفقات</p><div className="flex flex-wrap gap-2">{attachmentList.map(item => <span key={item} className="rounded-md border bg-card px-2 py-1 text-[11px] font-bold">📎 {item}</span>)}</div></div> : null}
+          {attachmentList.length > 0 ? <div><p className="mb-1 text-[11px] font-bold text-muted-foreground">المرفقات</p><div className="flex flex-wrap gap-2">{attachmentList.map(item => <div key={item} className="flex items-center gap-2 rounded-md border bg-card px-2 py-1"><span className="text-[11px] font-bold text-blue-600">📎 {item}</span><Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => toast.success('تم تحميل المرفق: ' + item)}>تحميل</Button></div>)}</div></div> : null}
           {!noteText && attachmentList.length === 0 && <p className="text-sm text-muted-foreground">لا توجد ملاحظات أو مرفقات مرتبطة بهذا السجل.</p>}
         </div>
       </section>

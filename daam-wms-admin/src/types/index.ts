@@ -14,7 +14,7 @@ export interface Invoice { ref: string; m: string; email: string; period: string
 export interface ServiceType { name: string; desc: string; cost: number; unit: string; prod: 'نعم' | 'لا'; status: 'نشط' | 'غير نشط'; model: 'دفعة واحدة' | 'متكرر'; freq: string }
 export interface ServiceRequest { ref: string; m: string; email: string; type: string; prod: string; qty: number; cost: number; urgency: Urgency; date: string; req: string; status: string; notes?: string; attachment?: string }
 export interface Subscription { id: string; m: string; type: string; cost: number; freq: string; next: string; status: string; total: number; start: string }
-export interface Approval { id: string; type: string; urgency: string; who: string; title: string; date: string; days: number; qty?: number; sourceRef?: string }
+export interface Approval { id: string; type: string; urgency: string; who: string; title: string; date: string; days: number; qty?: number; sourceRef?: string; attachments?: string[]; requestedInfo?: string; infoDeadline?: string; assignedTo?: string; assignmentReason?: string }
 export interface AppNotification { id: string; title: string; msg: string; type: string; icon: string; color: string; time: string; unread: boolean }
 export interface NotifEvent { name: string; email: boolean; app: boolean; sms: boolean; tpl: string }
 export interface AuditLog { id: string; type: string; actor: string; role: string; email: string; desc: string; entity: string; time: string; ip: string }

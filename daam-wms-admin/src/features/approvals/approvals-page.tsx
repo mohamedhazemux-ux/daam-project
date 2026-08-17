@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -19,6 +20,7 @@ const APPROVERS = ['منى المطيري', 'خالد العتيق', 'عبدال
 const STAFF = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن']
 export default function ApprovalsPage() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [q, setQ] = useState(''); const [type, setType] = useState(''); const [urgency, setUrgency] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
   const qp = useMemo(() => ({ q: dq, type, urgency, page, pageSize: 10 }), [dq, type, urgency, page])
@@ -61,6 +63,7 @@ export default function ApprovalsPage() {
     { id: 'days', header: 'أيام التعليق', cell: ({ row }) => <span className={row.original.days > 3 ? 'font-black text-destructive' : 'font-bold'}>{row.original.days} {row.original.days > 3 && '⚠'}</span> },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
       <div className="flex gap-1">
+        <Button size="sm" variant="outline" onClick={() => navigate('/records/approval/' + row.original.id)}>عرض التفاصيل</Button>
         <Button size="sm" variant="outline" onClick={() => { setApproving(row.original); setAForm({ notes: '', qty: row.original.qty ?? 0, cost: 0, date: todayISO(), staff: '' }); setAErr('') }}>اعتماد</Button>
         <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(row.original); setRForm({ reason: '', category: '', resubmit: 'نعم' }); setRErr('') }}>رفض</Button>
         <Button size="sm" variant="outline" onClick={() => { setInfoFor(row.original); setIForm({ info: '', deadline: '' }); setIErr('') }}>معلومات</Button>
