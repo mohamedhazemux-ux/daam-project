@@ -19,6 +19,7 @@ export const returnsService = {
     const r = db.returns.find(x => x.ref === ref)
     if (!r) throw new Error('مرجع الإرجاع غير موجود')
     r.status = 'معتمد'
+    db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
     audit('اعتماد طلب الإرجاع ' + ref + ' (' + r.type + ') — توليد بوليصة إرجاع وإرسال التعليمات للتاجر والعميل', 'مرتجعات', 'اعتماد')
   },
   async reject(ref: string, reason: string) {
@@ -27,6 +28,7 @@ export const returnsService = {
     if (!r) throw new Error('مرجع الإرجاع غير موجود')
     r.status = 'مرفوض'
     r.reason = reason
+    db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
     audit('رفض طلب الإرجاع ' + ref + ' — السبب: ' + reason, 'مرتجعات', 'رفض')
   },
   async receive(ref: string) {

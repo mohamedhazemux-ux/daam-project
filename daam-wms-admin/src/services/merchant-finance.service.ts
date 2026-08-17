@@ -62,7 +62,7 @@ export const merchantFinanceService = {
     const id = 'WD-' + ++wdSeq
     const attachment = input.attachments?.length ? input.attachments.join(', ') : undefined
     db.withdrawals.unshift({ id, m: store, email, amount: input.amount, method: 'تحويل بنكي', bank: input.account, date: todayISO(), status: 'معلق', notes: input.notes, attachment } as (typeof db.withdrawals)[0])
-    db.approvals.unshift({ id: 'APR-' + (500 + db.approvals.length + 1), type: 'طلب سحب مالي', who: store, title: 'طلب سحب ' + input.amount + ' ريال (' + id + ')', urgency: 'عادي', date: todayISO(), days: 0 })
+    db.approvals.unshift({ id: 'APR-' + (500 + db.approvals.length + 1), type: 'طلب سحب مالي', who: store, title: 'طلب سحب ' + input.amount + ' ريال (' + id + ')', urgency: 'عادي', date: todayISO(), days: 0, sourceRef: id })
     audit('طلب سحب مالي ' + id + ' بمبلغ ' + input.amount + ' — تم حجز المبلغ من الرصيد المتاح', 'مالية التاجر', 'إنشاء')
     return id
   },
@@ -81,6 +81,7 @@ export const merchantFinanceService = {
     x.status = 'ملغي'
     const w = db.wallets.find(v => v.m === x.m)
     if (w) w.res = Math.max(0, w.res - x.amount)
+    db.approvals = db.approvals.filter(a => a.sourceRef !== id)
     audit('إلغاء طلب السحب ' + id + ' — تم تحرير المبلغ المحجوز', 'مالية التاجر', 'تعديل')
   },
   async subscriptions(q: ListQuery & { store: string }): Promise<ListResult<(typeof db.subscriptions)[0]>> {

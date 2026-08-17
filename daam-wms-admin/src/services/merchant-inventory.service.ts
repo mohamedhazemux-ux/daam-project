@@ -31,7 +31,7 @@ export const merchantInventoryService = {
     await delay(400)
     const id = 'SR-' + ++srSeq
     db.stockRequests.unshift({ id, m: store, p: input.product, wh: 'المستودع الرئيسي', qty: input.qty, type: kind, date: new Date().toISOString().slice(0, 10), status: 'معلق', notes: input.notes, attachment: input.attachment })
-    db.approvals.unshift({ id: 'APR-' + (300 + db.approvals.length + 1), type: kind === 'إضافة' ? 'إضافة مخزون' : 'سحب مخزون', who: store, title: 'طلب ' + kind + ' مخزون: ' + input.product + ' × ' + input.qty, urgency: 'عادي', date: new Date().toISOString().slice(0, 10), days: 0, qty: input.qty })
+    db.approvals.unshift({ id: 'APR-' + (300 + db.approvals.length + 1), type: kind === 'إضافة' ? 'إضافة مخزون' : 'سحب مخزون', who: store, title: 'طلب ' + kind + ' مخزون: ' + input.product + ' × ' + input.qty, urgency: 'عادي', date: new Date().toISOString().slice(0, 10), days: 0, qty: input.qty, sourceRef: id })
     reqNotes[id] = input.notes
     audit('طلب ' + kind + ' مخزون: ' + input.product + ' × ' + input.qty + ' (' + id + ')', 'مخزون التاجر', 'إنشاء')
     return id

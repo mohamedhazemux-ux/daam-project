@@ -20,6 +20,7 @@ export const financeService = {
     if (!w) throw new Error('طلب السحب غير موجود')
     if (w.status !== 'معلق') throw new Error('يجب أن يكون طلب السحب بحالة "معلق" للاعتماد')
     w.status = 'معتمد'
+    db.approvals = db.approvals.filter(a => a.sourceRef !== id)
     audit('اعتماد طلب السحب ' + id + ' بمبلغ ' + w.amount, 'مالية', 'اعتماد')
   },
   async rejectWithdrawal(id: string, reason: string) {
@@ -29,6 +30,7 @@ export const financeService = {
     w.status = 'مرفوض'
     const wallet = db.wallets.find(x => x.m === w.m)
     if (wallet) wallet.res = Math.max(0, wallet.res - w.amount)
+    db.approvals = db.approvals.filter(a => a.sourceRef !== id)
     audit('رفض طلب السحب ' + id + ' — السبب: ' + reason + ' — إعادة المبلغ المحجوز للرصيد المتاح', 'مالية', 'رفض')
   },
   async processPayment(id: string, notes: string) {

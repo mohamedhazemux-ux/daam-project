@@ -1,6 +1,8 @@
 import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
+import { merchantReturns } from './merchant-returns.service'
+import { servicesService } from './services.service'
 import type { Approval, ListQuery, ListResult } from '@/types'
 const URGENCY: Record<string, number> = { 'حرج': 0, 'عاجل': 1, 'عادي': 2 }
 export const approvalsService = {
@@ -23,6 +25,35 @@ export const approvalsService = {
     await delay(400)
     const a = db.approvals.find(x => x.id === id)
     if (!a) throw new Error('طلب الموافقة غير موجود')
+    if (a.type === 'طلب خدمة' && a.sourceRef) {
+      await servicesService.approveRequest(a.sourceRef, { cost: extra.cost ?? 0, date: extra.date ?? '', staff: extra.staff ?? '', notes: extra.notes ?? '' })
+      return
+    }
+    if (a.sourceRef && (a.type === 'إضافة مخزون' || a.type === 'سحب مخزون')) {
+      const request = db.stockRequests.find(x => x.id === a.sourceRef)
+      if (!request) throw new Error('طلب المخزون المرتبط غير موجود')
+      const qty = extra.qty ?? request.qty
+      if (qty < 1 || qty > request.qty) throw new Error('الكمية المعتمدة غير صالحة')
+      request.qty = qty
+      request.status = 'معتمد'
+      const level = db.stockLevels.find(x => x.p === request.p && x.wh === request.wh)
+      if (level) level.avail = request.type === 'إضافة' ? level.avail + qty : Math.max(0, level.avail - qty)
+    }
+    if (a.sourceRef && a.type === 'طلب سحب مالي') {
+      const withdrawal = db.withdrawals.find(x => x.id === a.sourceRef)
+      if (!withdrawal) throw new Error('طلب السحب المرتبط غير موجود')
+      withdrawal.status = 'معتمد'
+    }
+    if (a.sourceRef && a.type === 'طلب إرجاع') {
+      const request = db.returns.find(x => x.ref === a.sourceRef)
+      if (!request) throw new Error('طلب الإرجاع المرتبط غير موجود')
+      request.status = 'معتمد'
+      const merchantRequest = merchantReturns.find(x => x.ref === a.sourceRef)
+      if (merchantRequest) {
+        merchantRequest.status = 'معتمد'
+        merchantRequest.timeline.unshift('معتمد بواسطة إدارة المنصة')
+      }
+    }
     db.approvals = db.approvals.filter(x => x.id !== id)
     audit('اعتماد طلب الموافقة ' + id + ' (' + a.type + ')' + (extra.qty ? ' — الكمية المعتمدة: ' + extra.qty : '') + (extra.cost ? ' — التكلفة: ' + extra.cost : ''), 'موافقات', 'اعتماد')
   },
@@ -30,6 +61,31 @@ export const approvalsService = {
     await delay(400)
     const a = db.approvals.find(x => x.id === id)
     if (!a) throw new Error('طلب الموافقة غير موجود')
+    if (a.type === 'طلب خدمة' && a.sourceRef) {
+      await servicesService.rejectRequest(a.sourceRef, r.reason)
+      return
+    }
+    if (a.sourceRef && (a.type === 'إضافة مخزون' || a.type === 'سحب مخزون')) {
+      const request = db.stockRequests.find(x => x.id === a.sourceRef)
+      if (request) request.status = 'مرفوض'
+    }
+    if (a.sourceRef && a.type === 'طلب سحب مالي') {
+      const withdrawal = db.withdrawals.find(x => x.id === a.sourceRef)
+      if (withdrawal) {
+        withdrawal.status = 'مرفوض'
+        const wallet = db.wallets.find(x => x.m === withdrawal.m)
+        if (wallet) wallet.res = Math.max(0, wallet.res - withdrawal.amount)
+      }
+    }
+    if (a.sourceRef && a.type === 'طلب إرجاع') {
+      const request = db.returns.find(x => x.ref === a.sourceRef)
+      if (request) { request.status = 'مرفوض'; request.reason = r.reason }
+      const merchantRequest = merchantReturns.find(x => x.ref === a.sourceRef)
+      if (merchantRequest) {
+        merchantRequest.status = 'مرفوض'
+        merchantRequest.timeline.unshift('مرفوض بواسطة الإدارة — السبب: ' + r.reason)
+      }
+    }
     db.approvals = db.approvals.filter(x => x.id !== id)
     audit('رفض طلب الموافقة ' + id + ' (' + a.type + ') — التصنيف: ' + r.category + ' — إعادة التقديم: ' + r.resubmit + ' — السبب: ' + r.reason, 'موافقات', 'رفض')
   },

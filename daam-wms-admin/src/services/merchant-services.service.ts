@@ -40,8 +40,10 @@ export const merchantServicesService = {
     const letter = (store.trim()[0] ?? 'M').toUpperCase()
     const ref = 'SRV-' + letter + '-' + String(++seq).padStart(3, '0')
     const recurring = st.model === 'متكرر'
+    const merchant = db.merchants.find(x => x.store === store)
     SERVICE_REQUESTS.unshift({ ref, m: store, type: st.name, desc: st.desc, product: input.product, qty: input.qty, estCost, urgency: input.urgency, status: 'معلق', preferred: input.preferred, notes: input.notes, attachments: input.attachments, recurring, freq: recurring ? st.freq : undefined, consent: input.consent, createdAt: todayISO(), timeline: ['معلق — ' + todayISO()] })
-    db.approvals.unshift({ id: 'APR-' + (600 + db.approvals.length + 1), type: 'طلب خدمة', who: store, title: 'طلب خدمة ' + ref + ' — ' + st.name + ' (تكلفة تقديرية ' + estCost + ')', urgency: input.urgency, date: todayISO(), days: 0 })
+    db.serviceRequests.unshift({ ref, m: store, email: merchant?.email ?? '', type: st.name, prod: input.product ?? '—', qty: input.qty, cost: estCost, urgency: input.urgency as 'عادي' | 'عاجل' | 'حرج', date: input.preferred ?? todayISO(), req: input.notes, status: 'معلق', notes: input.notes, attachment: input.attachments.length ? input.attachments.join(', ') : undefined })
+    db.approvals.unshift({ id: 'APR-' + (600 + db.approvals.length + 1), type: 'طلب خدمة', who: store, title: 'طلب خدمة ' + ref + ' — ' + st.name + ' (تكلفة تقديرية ' + estCost + ')', urgency: input.urgency, date: todayISO(), days: 0, sourceRef: ref })
     audit('إنشاء طلب خدمة ' + ref + ' — النوع: ' + st.name + ' — الكمية: ' + input.qty + ' — التكلفة التقديرية: ' + estCost + ' — الإلحاح: ' + input.urgency + (recurring ? ' — فوترة متكررة ' + st.freq : ''), 'خدمات التاجر', 'إنشاء')
     return ref
   },
@@ -58,6 +60,9 @@ export const merchantServicesService = {
     if (x.status !== 'معلق') throw new Error('يمكن إلغاء طلبات الخدمة المعلقة فقط')
     x.status = 'ملغي'
     x.timeline.unshift('ملغي بواسطة التاجر — ' + todayISO())
+    const adminRequest = db.serviceRequests.find(v => v.ref === ref)
+    if (adminRequest) adminRequest.status = 'ملغي'
+    db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
     audit('إلغاء طلب الخدمة ' + ref + ' بواسطة التاجر', 'خدمات التاجر', 'تعديل')
   },
   firstBilling: (freq: string) => { const d = new Date(); d.setDate(d.getDate() + (FREQ_DAYS[freq] ?? 30)); return d.toISOString().slice(0, 10) },

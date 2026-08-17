@@ -1,6 +1,7 @@
 ﻿import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
+import { SERVICE_REQUESTS } from './merchant-services.service'
 import type { ListQuery, ListResult, ServiceRequest, ServiceType, Subscription } from '@/types'
 export const servicesService = {
   async requests(q: ListQuery): Promise<ListResult<ServiceRequest>> {
@@ -27,6 +28,14 @@ export const servicesService = {
       subId = 'SUB-' + (5000 + db.subscriptions.length + 1)
       db.subscriptions.unshift({ id: subId, m: s.m, type: s.type, cost: data.cost, freq: st.freq, next: '2026-03-15', status: 'نشط', total: data.cost, start: data.date })
     }
+    const merchantRequest = SERVICE_REQUESTS.find(x => x.ref === ref)
+    if (merchantRequest) {
+      merchantRequest.status = 'معتمد'
+      merchantRequest.actualCost = data.cost
+      merchantRequest.subscriptionId = subId || undefined
+      merchantRequest.timeline.unshift('معتمد بواسطة ' + data.staff + ' بتكلفة فعلية ' + data.cost + ' — ' + data.date)
+    }
+    db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
     audit('اعتماد طلب الخدمة ' + ref + ' — التكلفة: ' + data.cost + ' — الموظف: ' + data.staff + (subId ? ' — اشتراك: ' + subId : ''), 'خدمات', 'اعتماد')
     return subId
   },
@@ -35,6 +44,12 @@ export const servicesService = {
     const s = db.serviceRequests.find(x => x.ref === ref)
     if (!s) throw new Error('طلب الخدمة غير موجود')
     s.status = 'مرفوض'
+    const merchantRequest = SERVICE_REQUESTS.find(x => x.ref === ref)
+    if (merchantRequest) {
+      merchantRequest.status = 'مرفوض'
+      merchantRequest.timeline.unshift('مرفوض بواسطة الإدارة — السبب: ' + reason)
+    }
+    db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
     audit('رفض طلب الخدمة ' + ref + ' — السبب: ' + reason, 'خدمات', 'رفض')
   },
   async advanceStatus(ref: string) {
@@ -44,6 +59,11 @@ export const servicesService = {
     const next = s.status === 'معتمد' ? 'قيد التنفيذ' : s.status === 'قيد التنفيذ' ? 'مكتمل' : null
     if (!next) throw new Error('انتقال حالة غير صالح من ' + s.status)
     s.status = next
+    const merchantRequest = SERVICE_REQUESTS.find(x => x.ref === ref)
+    if (merchantRequest) {
+      merchantRequest.status = next
+      merchantRequest.timeline.unshift(next + ' بواسطة إدارة المنصة')
+    }
     audit('تحديث حالة طلب الخدمة ' + ref + ' إلى ' + next, 'خدمات', 'تعديل')
     return next
   },

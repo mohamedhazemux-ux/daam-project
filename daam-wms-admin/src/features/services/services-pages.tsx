@@ -1,6 +1,5 @@
 ﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
@@ -17,7 +16,6 @@ import { Search } from 'lucide-react'
 const STAFF = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن', 'ناصر كمال']
 const UNITS = ['لكل قطعة', 'لكل ساعة', 'لكل طبلية', 'لكل طلب', 'ثابتة']
 export function ServiceRequestsPage() {
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const [q, setQ] = useState(''); const [urgency, setUrgency] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
@@ -45,7 +43,7 @@ export function ServiceRequestsPage() {
     { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => { const s = row.original; return (
       <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => navigate(`/records/service-request/${s.ref}`)}>عرض</Button>
+        <Button size="sm" variant="outline" onClick={() => setViewing(s)}>عرض</Button>
         {s.status === 'معلق' && <>
           <Button size="sm" variant="outline" onClick={() => { setApproving(s); setForm({ cost: s.cost, date: todayISO(), staff: '', notes: '' }); setFErr('') }}>اعتماد</Button>
           <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(s.ref); setReason(''); setRErr('') }}>رفض</Button>

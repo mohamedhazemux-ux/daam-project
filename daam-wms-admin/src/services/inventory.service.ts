@@ -21,6 +21,7 @@ export const inventoryService = {
     r.status = 'معتمد'
     const lv = db.stockLevels.find(s => s.p === r.p)
     if (lv) lv.avail = r.type === 'إضافة' ? lv.avail + r.qty : Math.max(0, lv.avail - r.qty)
+    db.approvals = db.approvals.filter(a => a.sourceRef !== id)
     audit('اعتماد طلب المخزون ' + id, 'مخزون', 'اعتماد')
   },
   async rejectRequest(id: string, reason: string) {
@@ -28,6 +29,7 @@ export const inventoryService = {
     const r = db.stockRequests.find(x => x.id === id)
     if (!r) throw new Error('الطلب غير موجود')
     r.status = 'مرفوض'
+    db.approvals = db.approvals.filter(a => a.sourceRef !== id)
     audit('رفض طلب المخزون ' + id + ' — السبب: ' + reason, 'مخزون', 'رفض')
   },
   async levels(q: ListQuery): Promise<ListResult<StockLevel>> {

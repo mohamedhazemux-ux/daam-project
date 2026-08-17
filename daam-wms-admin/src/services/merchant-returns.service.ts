@@ -42,7 +42,7 @@ export const merchantReturnsService = {
     const attachments = input.attachments ?? []
     merchantReturns.unshift({ ref, m: store, order: input.orderRef, cust: input.cust, phone: input.phone, deliveredAt: input.deliveredAt, items: input.items, totalItems, type: input.type, refundMethod: input.refundMethod, notes: input.notes, attachments, status: 'معلق', createdAt: todayISO(), timeline: ['معلق — ' + todayISO()] })
     db.returns.unshift({ ref, m: store, email, order: input.orderRef, cust: input.cust, count: totalItems, type: input.type, date: todayISO(), status: 'معلق', reason: '', notes: input.notes, attachment: attachments.length ? attachments.join(', ') : undefined } as (typeof db.returns)[0])
-    db.approvals.unshift({ id: 'APR-' + (400 + db.approvals.length + 1), type: 'طلب إرجاع', who: store, title: 'طلب إرجاع ' + ref + ' للطلب ' + input.orderRef + ' (' + totalItems + ' صنف)', urgency: 'عادي', date: todayISO(), days: 0 })
+    db.approvals.unshift({ id: 'APR-' + (400 + db.approvals.length + 1), type: 'طلب إرجاع', who: store, title: 'طلب إرجاع ' + ref + ' للطلب ' + input.orderRef + ' (' + totalItems + ' صنف)', urgency: 'عادي', date: todayISO(), days: 0, sourceRef: ref })
     audit('إنشاء طلب إرجاع ' + ref + ' للطلب ' + input.orderRef + ' — الأصناف: ' + totalItems + ' — النوع: ' + input.type, 'مرتجعات التاجر', 'إنشاء')
     return ref
   },
@@ -61,6 +61,7 @@ export const merchantReturnsService = {
     r.timeline.unshift('ملغي بواسطة التاجر — ' + todayISO())
     const adm = db.returns.find(x => x.ref === ref)
     if (adm) adm.status = 'ملغي'
+    db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
     audit('إلغاء طلب الإرجاع ' + ref + ' بواسطة التاجر', 'مرتجعات التاجر', 'تعديل')
   },
 }
