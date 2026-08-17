@@ -31,7 +31,8 @@ export const useAuthStore = create<AuthState>()(persist((set, get) => ({
   },
   logout: () => set({ user: null }),
   setUser: (user) => set({ user }),
-  can: (_perm) => {
+  can: (permission) => {
+    void permission
     const u = get().user
     return !!u
   },

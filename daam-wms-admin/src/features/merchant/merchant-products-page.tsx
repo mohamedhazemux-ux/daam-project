@@ -44,7 +44,7 @@ export default function MerchantProductsPage() {
   const toggle = useMutation({ mutationFn: (ref: string) => merchantProductsService.toggle(ref), onSuccess: () => { toast.success('تم تغيير حالة المنتج بنجاح'); invalidate(); setViewing(null) } })
   const remove = useMutation({ mutationFn: (ref: string) => merchantProductsService.remove(ref), onSuccess: () => { toast.success('تم حذف المنتج بنجاح'); invalidate(); setDeleting(null); setViewing(null) } })
   const generate = useMutation({ mutationFn: () => merchantProductsService.generate(user!.store!, 3), onSuccess: () => { toast.success('تم توليد المنتجات بنجاح'); invalidate(); setBulkOpen(false) } })
-  const onBulkFile = (name: string, size: number) => {
+  const onBulkFile = (name: string) => {
     setBErr('')
     setBulkOk(false)
     if (!/\.(xlsx|xls)$/i.test(name)) { setBErr('الملف غير صالح ، يرجى التحقق من التنسيق والبيانات'); setBulkFile(''); return }
@@ -84,7 +84,6 @@ export default function MerchantProductsPage() {
         <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleting(row.original)}>حذف</Button>
       </div>) },
   ]
-  const platColumns: ColumnDef<never, unknown>[] = []
   return (
     <div className="space-y-4">
       <div className="rounded-xl border bg-card shadow-sm">
@@ -157,7 +156,7 @@ export default function MerchantProductsPage() {
           {bulkOk && <Button disabled={generate.isPending} onClick={() => generate.mutate()}>توليد المنتجات</Button>}
         </>}>
         <div className="grid gap-3">
-          <div><Label>ملف Excel (.xlsx / .xls)</Label><Input type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) onBulkFile(f.name, f.size) }} /></div>
+          <div><Label>ملف Excel (.xlsx / .xls)</Label><Input type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) onBulkFile(f.name) }} /></div>
           {bErr && <p className="text-xs font-bold text-destructive">{bErr}</p>}
           {bulkOk && <p className="rounded-lg bg-muted p-2 text-xs font-bold">الملف: <b dir="ltr">{bulkFile}</b> — جاهز للتوليد (3 منتجات تجريبية)</p>}
         </div>

@@ -1,5 +1,6 @@
 ﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ const CONDITIONS = ['غير مفتوح', 'مفتوح لكن غير مستخدم'
 const ITEM_NAMES = ['قهوة عربية مختصة 1كجم', 'بن محمص كولومبي 500جم', 'منظف أرضيات معطر 3لتر']
 
 export default function ReturnsPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [tab, setTab] = useState('pending')
   const [q, setQ] = useState('')
@@ -33,6 +35,7 @@ export default function ReturnsPage() {
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [rErr, setRErr] = useState('')
+  const [viewing, setViewing] = useState<ReturnRequest | null>(null)
   const [receiving, setReceiving] = useState<ReturnRequest | null>(null)
   const [inspecting, setInspecting] = useState<ReturnRequest | null>(null)
   const [conds, setConds] = useState<{ condition: string; notes: string }[]>([])
@@ -64,7 +67,7 @@ export default function ReturnsPage() {
   const refundAmount = (r: ReturnRequest) => r.count * 180
 
   const columns: ColumnDef<ReturnRequest, unknown>[] = [
-    { accessorKey: 'ref', header: 'مرجع الإرجاع', cell: ({ row }) => <b>{row.original.ref}</b> },
+    { accessorKey: 'ref', header: 'مرجع الإرجاع', cell: ({ row }) => <button className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/return/${row.original.ref}`)}>{row.original.ref}</button> },
     { id: 'merchant', header: 'التاجر', cell: ({ row }) => <div><p className="font-bold">{row.original.m}</p><p className="text-[11px] text-muted-foreground">{row.original.email}</p></div> },
     { accessorKey: 'order', header: 'الطلب الأصلي' },
     { accessorKey: 'cust', header: 'العميل' },
@@ -74,6 +77,7 @@ export default function ReturnsPage() {
     { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => { const r = row.original; return (
       <div className="flex gap-1">
+        <Button size="sm" variant="outline" onClick={() => navigate(`/records/return/${r.ref}`)}>عرض</Button>
         {r.status === 'معلق' && <>
           <Button size="sm" variant="outline" onClick={() => setApproving(r.ref)}>اعتماد</Button>
           <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(r.ref); setReason(''); setRErr('') }}>رفض</Button>
@@ -188,7 +192,52 @@ export default function ReturnsPage() {
           {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
         </>}
       </Modal>
+
+      <Modal open={!!viewing} onClose={() => setViewing(null)} title={'تفاصيل طلب الإرجاع — ' + (viewing?.ref ?? '')}
+        footer={<>
+          <Button variant="outline" onClick={() => setViewing(null)}>إغلاق</Button>
+        </>}>
+        {viewing && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['مرجع الإرجاع', viewing.ref],
+                ['التاجر', viewing.m],
+                ['الطلب الأصلي', viewing.order],
+                ['العميل', viewing.cust],
+                ['القطع', String(viewing.count)],
+                ['النوع', viewing.type],
+                ['التاريخ', arDate(viewing.date)],
+                ['الحالة', viewing.status],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2">
+                  <p className="text-[11px] font-bold text-muted-foreground">{k}</p>
+                  <p className="text-[13px] font-extrabold">{v}</p>
+                </div>
+              ))}
+            </div>
+            {viewing.notes && (
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground">الملاحظات</p>
+                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm font-semibold">
+                  {viewing.notes}
+                </div>
+              </div>
+            )}
+            {viewing.attachment && (
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
+                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
+                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>تحميل المرفق</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
-

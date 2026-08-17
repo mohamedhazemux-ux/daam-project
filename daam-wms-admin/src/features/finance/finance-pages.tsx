@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -14,10 +15,13 @@ import { arDate, downloadCSV, money } from '@/lib/utils'
 import type { Invoice, Wallet, Withdrawal } from '@/types'
 import { Search } from 'lucide-react'
 import { printInvoicePDF } from '@/lib/pdf-utils'
+import { useT } from '@/lib/i18n'
 
 /* ---------- طلبات السحب المعلقة ---------- */
 export function WithdrawalsPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -37,6 +41,7 @@ export function WithdrawalsPage() {
   const [confirmNo, setConfirmNo] = useState('')
   const [cNotes, setCNotes] = useState('')
   const [cErr, setCErr] = useState('')
+  const [viewing, setViewing] = useState<Withdrawal | null>(null)
 
   const approve = useMutation({ mutationFn: (id: string) => financeService.approveWithdrawal(id), onSuccess: () => { toast.success('تمت الموافقة على طلب السحب بنجاح'); invalidate(); setApproving(null) }, onError: e => toast.error((e as Error).message) })
   const reject = useMutation({ mutationFn: (v: { id: string; reason: string }) => financeService.rejectWithdrawal(v.id, v.reason), onSuccess: () => { toast.success('تم رفض طلب السحب بنجاح — تمت إعادة المبلغ المحجوز إلى الرصيد المتاح للتاجر'); invalidate(); setRejecting(null) } })
@@ -44,21 +49,22 @@ export function WithdrawalsPage() {
   const complete = useMutation({ mutationFn: (v: { id: string; confirmNo: string }) => financeService.completeWithdrawal(v.id, v.confirmNo), onSuccess: () => { toast.success('تم اكتمال السحب بنجاح — تم إرسال بريد التأكيد للتاجر'); invalidate(); setCompleting(null) }, onError: e => toast.error((e as Error).message) })
 
   const columns: ColumnDef<Withdrawal, unknown>[] = [
-    { accessorKey: 'id', header: 'رقم الطلب', cell: ({ row }) => <b>{row.original.id}</b> },
-    { id: 'merchant', header: 'التاجر', cell: ({ row }) => <div><p className="font-bold">{row.original.m}</p><p className="text-[11px] text-muted-foreground">{row.original.email}</p></div> },
-    { id: 'amount', header: 'المبلغ', cell: ({ row }) => <b>{money(row.original.amount)}</b> },
-    { accessorKey: 'method', header: 'الطريقة' },
-    { accessorKey: 'bank', header: 'الحساب البنكي', cell: ({ row }) => <span dir="ltr">{row.original.bank}</span> },
-    { id: 'date', header: 'تاريخ الطلب', cell: ({ row }) => arDate(row.original.date) },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => { const w = row.original; return (
+    { accessorKey: 'id', header: t('رقم الطلب'), cell: ({ row }) => <button className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/withdrawal/${row.original.id}`)}>{row.original.id}</button> },
+    { id: 'merchant', header: t('التاجر'), cell: ({ row }) => <div><p className="font-bold">{row.original.m}</p><p className="text-[11px] text-muted-foreground">{row.original.email}</p></div> },
+    { id: 'amount', header: t('المبلغ'), cell: ({ row }) => <b>{money(row.original.amount)}</b> },
+    { accessorKey: 'method', header: t('الطريقة') },
+    { accessorKey: 'bank', header: t('الحساب البنكي'), cell: ({ row }) => <span dir="ltr">{row.original.bank}</span> },
+    { id: 'date', header: t('تاريخ الطلب'), cell: ({ row }) => arDate(row.original.date) },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => { const w = row.original; return (
       <div className="flex gap-1">
+        <Button size="sm" variant="outline" onClick={() => navigate(`/records/withdrawal/${w.id}`)}>{t('عرض')}</Button>
         {w.status === 'معلق' && <>
-          <Button size="sm" variant="outline" onClick={() => setApproving(w.id)}>اعتماد</Button>
-          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(w.id); setReason(''); setRErr('') }}>رفض</Button>
+          <Button size="sm" variant="outline" onClick={() => setApproving(w.id)}>{t('اعتماد')}</Button>
+          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(w.id); setReason(''); setRErr('') }}>{t('رفض')}</Button>
         </>}
-        {w.status === 'معتمد' && <Button size="sm" variant="outline" onClick={() => { setProcessing(w); setPNotes(''); setPErr('') }}>تنفيذ الدفع</Button>}
-        {w.status === 'قيد التنفيذ' && <Button size="sm" variant="outline" onClick={() => { setCompleting(w); setConfirmNo(''); setCNotes(''); setCErr('') }}>تأكيد الاكتمال</Button>}
+        {w.status === 'معتمد' && <Button size="sm" variant="outline" onClick={() => { setProcessing(w); setPNotes(''); setPErr('') }}>{t('تنفيذ الدفع')}</Button>}
+        {w.status === 'قيد التنفيذ' && <Button size="sm" variant="outline" onClick={() => { setCompleting(w); setConfirmNo(''); setCNotes(''); setCErr('') }}>{t('تأكيد الاكتمال')}</Button>}
       </div>) } },
   ]
 
@@ -69,13 +75,13 @@ export function WithdrawalsPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث برقم الطلب أو التاجر..." className="pe-9" aria-label="بحث في طلبات السحب" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث برقم الطلب أو التاجر...')} className="pe-9" aria-label={t('بحث في طلبات السحب')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
               {['معلق', 'معتمد', 'قيد التنفيذ', 'مكتمل', 'مرفوض'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <span className="ms-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">{(data?.rows ?? []).filter(w => w.status === 'معلق').length} طلب بانتظار المراجعة</span>
+            <span className="ms-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">{(data?.rows ?? []).filter(w => w.status === 'معلق').length} {t('طلب بانتظار المراجعة')}</span>
           </div>
         } />
 
@@ -145,6 +151,51 @@ export function WithdrawalsPage() {
           </div>
           {cErr && <p className="mt-1 text-xs font-bold text-destructive">{cErr}</p>}
         </>}
+      </Modal>
+
+      <Modal open={!!viewing} onClose={() => setViewing(null)} title={'تفاصيل طلب السحب — ' + (viewing?.id ?? '')}
+        footer={<>
+          <Button variant="outline" onClick={() => setViewing(null)}>إغلاق</Button>
+        </>}>
+        {viewing && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                [t('رقم الطلب'), viewing.id],
+                [t('التاجر'), viewing.m],
+                [t('المبلغ'), money(viewing.amount)],
+                [t('الطريقة'), viewing.method],
+                [t('الحساب البنكي'), <span dir="ltr">{viewing.bank}</span>],
+                [t('التاريخ'), arDate(viewing.date)],
+                [t('الحالة'), viewing.status],
+              ].map(([k, v]) => (
+                <div key={String(k)} className="rounded-lg border bg-muted/40 px-3 py-2">
+                  <p className="text-[11px] font-bold text-muted-foreground">{k}</p>
+                  <p className="text-[13px] font-extrabold">{v}</p>
+                </div>
+              ))}
+            </div>
+            {viewing.notes && (
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground">الملاحظات</p>
+                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm font-semibold">
+                  {viewing.notes}
+                </div>
+              </div>
+            )}
+            {viewing.attachment && (
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
+                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
+                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>{t('تحميل المرفق')}</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   )
@@ -254,6 +305,7 @@ export function WalletsPage() {
 
 /* ---------- الفواتير الشهرية الموحدة (CR-005) ---------- */
 export function InvoicesPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
@@ -269,7 +321,7 @@ export function InvoicesPage() {
   const markPaid = useMutation({ mutationFn: (ref: string) => financeService.markPaid(ref), onSuccess: () => { toast.success('تم تحديد الفاتورة كمدفوعة بنجاح'); invalidate() } })
 
   const columns: ColumnDef<Invoice, unknown>[] = [
-    { accessorKey: 'ref', header: 'مرجع الفاتورة', cell: ({ row }) => <b dir="ltr">{row.original.ref}</b> },
+    { accessorKey: 'ref', header: 'مرجع الفاتورة', cell: ({ row }) => <button dir="ltr" className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/invoice/${row.original.ref}`)}>{row.original.ref}</button> },
     { accessorKey: 'm', header: 'التاجر' },
     { accessorKey: 'period', header: 'الفترة' },
     { id: 'total', header: 'المبلغ المستحق', cell: ({ row }) => <b>{money(row.original.total)}</b> },
@@ -279,7 +331,7 @@ export function InvoicesPage() {
     { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
       <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => setViewing(row.original)}>عرض</Button>
+        <Button size="sm" variant="outline" onClick={() => navigate(`/records/invoice/${row.original.ref}`)}>عرض</Button>
         <Button size="sm" variant="outline" onClick={() => setResending(row.original.ref)}>إعادة إرسال</Button>
         {row.original.status !== 'مدفوعة' && <Button size="sm" variant="outline" onClick={() => markPaid.mutate(row.original.ref)}>تحديد كمدفوعة</Button>}
       </div>) },

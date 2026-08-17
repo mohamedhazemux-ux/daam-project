@@ -17,14 +17,14 @@ export const merchantReportsService = {
       detail: rows,
     }
   },
-  async inventory(store: string, type: string, locations: string[]) {
+  async inventory(store: string, type: string, from?: string, to?: string) {
     await delay(300)
     const prods = merchantProducts.filter(p => p.m === store)
     const wh = 'المستودع الرئيسي'
     audit('توليد تقرير المخزون — النوع: ' + type, 'تقارير التاجر')
     if (type === 'المستويات الحالية') return { rows: prods.map(p => ({ a: p.name, b: p.sku, c: wh, d: p.qty, e: Math.round(p.sold / 10), f: p.qty === 0 ? 'نفد' : p.qty < 25 ? 'منخفض' : 'اعتيادي' })) }
     if (type === 'سجل حركات المخزون') {
-      const reqs = db.stockRequests.filter(r => r.m === store)
+      const reqs = db.stockRequests.filter(r => r.m === store && (!from || r.date >= from) && (!to || r.date <= to))
       return { rows: reqs.map(r => ({ a: r.p, b: r.id, c: r.type, d: r.qty, e: r.wh, f: r.date })) }
     }
     if (type === 'تنبيه المخزون المنخفض') return { rows: prods.filter(p => p.qty > 0 && p.qty < 25).map(p => ({ a: p.name, b: p.sku, c: wh, d: p.qty, e: 45 - p.qty, f: 'اقتراح إعادة طلب' })) }

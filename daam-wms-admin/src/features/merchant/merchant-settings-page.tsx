@@ -29,14 +29,14 @@ export default function MerchantSettingsPage() {
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div><Label>{t('وضع العرض')}</Label>
             <select className={selectCls + ' w-full'} value={theme} onChange={e => usePrefsStore.getState().setTheme(e.target.value as 'light' | 'dark')}>
-              <option value="light">فاتح (أبيض)</option><option value="dark">داكن (أسود)</option>
+              <option value="light">{t('فاتح (أبيض)')}</option><option value="dark">{t('داكن (أسود)')}</option>
             </select></div>
           <div><Label>{t('لغة الواجهة')}</Label>
             <select className={selectCls + ' w-full'} value={lang} onChange={e => usePrefsStore.getState().setLang(e.target.value as 'ar' | 'en')}>
-              <option value="ar">العربية</option><option value="en">English</option>
+              <option value="ar">{t('العربية')}</option><option value="en">English</option>
             </select></div>
         </CardContent></Card>
-      <Card><CardHeader><CardTitle className="text-sm">إعدادات الإشعارات</CardTitle></CardHeader>
+      <Card><CardHeader><CardTitle className="text-sm">{t('إعدادات الإشعارات')}</CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-hidden rounded-lg border">
             <table className="w-full text-sm">

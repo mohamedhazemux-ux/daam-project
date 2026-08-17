@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -42,10 +42,14 @@ export default function ApprovalsPage() {
   const reqInfo = useMutation({ mutationFn: (v: { id: string; info: string; deadline: string }) => approvalsService.requestInfo(v.id, v.info, v.deadline), onSuccess: () => { toast.success('تم إرسال طلب المعلومات بنجاح'); invalidate(); setInfoFor(null) } })
   const assign = useMutation({ mutationFn: (v: { id: string; approver: string; reason: string }) => approvalsService.assign(v.id, v.approver, v.reason), onSuccess: () => { toast.success('تم إسناد الموافقة بنجاح'); invalidate(); setAssignFor(null) } })
   const cards = dash ? [
-    { l: 'إجمالي المعلقة', v: dash.total, t: '' }, { l: 'تأهيل تجار', v: dash.onboarding, t: 'تأهيل تاجر' },
-    { l: 'إضافة مخزون', v: dash.stockAdd, t: 'إضافة مخزون' }, { l: 'سحب مخزون', v: dash.stockRemove, t: 'سحب مخزون' },
-    { l: 'مرتجعات', v: dash.returns, t: 'طلب إرجاع' }, { l: 'سحب مالي', v: dash.withdrawals, t: 'طلب سحب مالي' },
-    { l: 'خدمات', v: dash.services, t: 'طلب خدمة' }, { l: 'حرجة / عاجلة', v: dash.critical, t: '', hot: true },
+    { l: 'إجمالي المعلقة', v: dash.total, onClick: () => { setType(''); setUrgency(''); setPage(1) } },
+    { l: 'تأهيل تجار', v: dash.onboarding, onClick: () => { setType('تأهيل تاجر'); setUrgency(''); setPage(1) } },
+    { l: 'إضافة مخزون', v: dash.stockAdd, onClick: () => { setType('إضافة مخزون'); setUrgency(''); setPage(1) } },
+    { l: 'سحب مخزون', v: dash.stockRemove, onClick: () => { setType('سحب مخزون'); setUrgency(''); setPage(1) } },
+    { l: 'مرتجعات', v: dash.returns, onClick: () => { setType('طلب إرجاع'); setUrgency(''); setPage(1) } },
+    { l: 'سحب مالي', v: dash.withdrawals, onClick: () => { setType('طلب سحب مالي'); setUrgency(''); setPage(1) } },
+    { l: 'خدمات', v: dash.services, onClick: () => { setType('طلب خدمة'); setUrgency(''); setPage(1) } },
+    { l: 'حرجة / عاجلة', v: dash.critical, onClick: () => { setType(''); setUrgency('critical'); setPage(1) }, hot: true },
   ] : []
   const columns: ColumnDef<Approval, unknown>[] = [
     { accessorKey: 'id', header: 'المعرف', cell: ({ row }) => <b>{row.original.id}</b> },
@@ -67,7 +71,7 @@ export default function ApprovalsPage() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
         {cards.map(c => (
-          <button key={c.l} onClick={() => { setType(c.t); setPage(1) }} className={c.hot ? 'rounded-xl border border-destructive/40 bg-card p-3 text-start shadow-sm' : 'rounded-xl border bg-card p-3 text-start shadow-sm'}>
+          <button key={c.l} onClick={c.onClick} className={c.hot ? 'rounded-xl border border-destructive/40 bg-card p-3 text-start shadow-sm' : 'rounded-xl border bg-card p-3 text-start shadow-sm'}>
             <p className="text-lg font-black">{c.v}</p>
             <p className="text-[11px] font-bold text-muted-foreground">{c.l}</p>
           </button>
@@ -87,6 +91,7 @@ export default function ApprovalsPage() {
               </select>
               <select className={selectCls} value={urgency} onChange={e => { setUrgency(e.target.value); setPage(1) }} aria-label="تصفية حسب الإلحاح">
                 <option value="">كل مستويات الإلحاح</option>
+                <option value="critical">حرجة / عاجلة</option>
                 {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
               <p className="ms-auto text-xs font-semibold text-muted-foreground">الفرز: الإلحاح ثم الأقدم — الأحمر = معلق أكثر من 3 أيام</p>

@@ -1,4 +1,5 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -13,10 +14,13 @@ import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, downloadCSV } from '@/lib/utils'
 import type { Merchant, StockLevel, StockRequest } from '@/types'
 import { Search } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 /* ---------- طلبات المخزون المعلقة ---------- */
 export function StockRequestsPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState('')
   const [type, setType] = useState('')
   const [page, setPage] = useState(1)
@@ -29,22 +33,24 @@ export function StockRequestsPage() {
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [rErr, setRErr] = useState('')
+  const [viewing, setViewing] = useState<StockRequest | null>(null)
 
   const approve = useMutation({ mutationFn: (id: string) => inventoryService.approveRequest(id), onSuccess: () => { toast.success('تمت الموافقة على طلب المخزون بنجاح'); invalidate(); setApproving(null) } })
   const reject = useMutation({ mutationFn: (v: { id: string; reason: string }) => inventoryService.rejectRequest(v.id, v.reason), onSuccess: () => { toast.success('تم رفض طلب المخزون بنجاح'); invalidate(); setRejecting(null) } })
 
   const columns: ColumnDef<StockRequest, unknown>[] = [
-    { accessorKey: 'id', header: 'رقم الطلب', cell: ({ row }) => <b>{row.original.id}</b> },
-    { accessorKey: 'm', header: 'التاجر' },
-    { accessorKey: 'p', header: 'المنتج' },
-    { accessorKey: 'wh', header: 'المستودع' },
-    { accessorKey: 'qty', header: 'الكمية' },
-    { id: 'type', header: 'النوع', cell: ({ row }) => <StatusBadge value={row.original.type} /> },
-    { id: 'date', header: 'تاريخ الطلب', cell: ({ row }) => arDate(row.original.date) },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
+    { accessorKey: 'id', header: t('رقم الطلب'), cell: ({ row }) => <b>{row.original.id}</b> },
+    { accessorKey: 'm', header: t('التاجر') },
+    { accessorKey: 'p', header: t('المنتج') },
+    { accessorKey: 'wh', header: t('المستودع') },
+    { accessorKey: 'qty', header: t('الكمية') },
+    { id: 'type', header: t('النوع'), cell: ({ row }) => <StatusBadge value={row.original.type} /> },
+    { id: 'date', header: t('تاريخ الطلب'), cell: ({ row }) => arDate(row.original.date) },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
       <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => setApproving(row.original.id)}>اعتماد</Button>
-        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(row.original.id); setReason(''); setRErr('') }}>رفض</Button>
+        <Button size="sm" variant="outline" onClick={() => navigate(`/records/stock-request/${row.original.id}`)}>{t('عرض')}</Button>
+        <Button size="sm" variant="outline" onClick={() => setApproving(row.original.id)}>{t('اعتماد')}</Button>
+        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(row.original.id); setReason(''); setRErr('') }}>{t('رفض')}</Button>
       </div>) },
   ]
 
@@ -84,6 +90,58 @@ export function StockRequestsPage() {
         <Label>سبب الرفض <span className="text-destructive">*</span> (10 – 500 حرف)</Label>
         <Textarea value={reason} maxLength={500} onChange={e => setReason(e.target.value)} placeholder="اشرح سبب رفض الطلب..." />
         {rErr && <p className="mt-1 text-xs font-bold text-destructive">{rErr}</p>}
+      </Modal>
+
+      <Modal open={!!viewing} onClose={() => setViewing(null)} title={'تفاصيل طلب المخزون — ' + (viewing?.id ?? '')}
+        footer={<>
+          <Button variant="outline" onClick={() => setViewing(null)}>إغلاق</Button>
+          {viewing?.status === 'معلق' && (
+            <>
+              <Button onClick={() => { setViewing(null); setApproving(viewing.id); }}>اعتماد</Button>
+              <Button variant="destructive" onClick={() => { setViewing(null); setRejecting(viewing.id); setReason(''); setRErr(''); }}>رفض</Button>
+            </>
+          )}
+        </>}>
+        {viewing && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['رقم الطلب', viewing.id],
+                ['التاجر', viewing.m],
+                ['المنتج', viewing.p],
+                ['المستودع', viewing.wh],
+                ['الكمية', String(viewing.qty)],
+                ['النوع', viewing.type],
+                ['التاريخ', arDate(viewing.date)],
+                ['الحالة', viewing.status],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2">
+                  <p className="text-[11px] font-bold text-muted-foreground">{k}</p>
+                  <p className="text-[13px] font-extrabold">{v}</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-muted-foreground">الملاحظات</p>
+              <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm font-semibold">
+                {viewing.notes || 'لا توجد ملاحظات مرفقة'}
+              </div>
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
+              <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
+                {viewing.attachment ? (
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
+                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>تحميل المرفق</Button>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">لا توجد مرفقات</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

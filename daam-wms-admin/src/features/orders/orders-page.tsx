@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -11,14 +12,15 @@ import { ordersService } from '@/services/orders.service'
 import { merchantService } from '@/services/merchant.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, downloadCSV, money } from '@/lib/utils'
-import { printPackingSlipPDF } from '@/lib/pdf-utils'
+import { printPackingSlipPDF, printShippingLabelPDF } from '@/lib/pdf-utils'
 import type { Order } from '@/types'
 import { Download, Eye, Printer, Search, Truck } from 'lucide-react'
 
-const STATUSES = ['معلق', 'قيد المعالجة', 'مكتمل', 'ملغي']
+const STATUSES = ['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي']
 const PICKERS = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن']
 
 export default function OrdersPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
@@ -59,10 +61,29 @@ export default function OrdersPage() {
     })
     toast.success('تم تجهيز قائمة التجميع والطباعة (PDF)')
   }
-  const printLabel = (id: string) => ordersService.printLabel(id).then(() => toast.success('تم إنشاء بوليصة الشحن (PDF) وتنزيلها')).catch(e => toast.error((e as Error).message))
+  const printLabel = (id: string) => {
+    const o = (data?.rows ?? []).find(x => x.id === id) || (viewing?.id === id ? viewing : null)
+    if (!o) {
+      toast.error('الطلب غير موجود')
+      return
+    }
+    ordersService.printLabel(id)
+      .then(() => {
+        printShippingLabelPDF({
+          orderNumber: o.id,
+          customerName: o.cust,
+          shippingAddress: 'الرياض — المملكة العربية السعودية',
+          merchantName: o.m,
+          trackingNumber: 'TRK-88' + o.id.slice(-4),
+          date: arDate(o.date)
+        })
+        toast.success('تم إنشاء بوليصة الشحن (PDF) وتنزيلها')
+      })
+      .catch(e => toast.error((e as Error).message))
+  }
 
   const columns: ColumnDef<Order, unknown>[] = [
-    { id: 'id', header: 'رقم الطلب', cell: ({ row }) => <button className="font-bold underline-offset-4 hover:underline" onClick={() => { setViewing(row.original); setNewStatus(row.original.status) }}>{row.original.id}</button> },
+    { id: 'id', header: 'رقم الطلب', cell: ({ row }) => <button className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/order/${row.original.id}`)}>{row.original.id}</button> },
     { accessorKey: 'm', header: 'التاجر' },
     { id: 'date', header: 'التاريخ', cell: ({ row }) => arDate(row.original.date) },
     { accessorKey: 'items', header: 'المنتجات', cell: ({ row }) => row.original.items + ' منتجات' },
@@ -71,7 +92,7 @@ export default function OrdersPage() {
     { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
       <div className="flex gap-1">
-        <Button variant="outline" size="icon" className="size-8" aria-label="عرض التفاصيل" onClick={() => { setViewing(row.original); setNewStatus(row.original.status) }}><Eye className="size-4" /></Button>
+        <Button variant="outline" size="icon" className="size-8" aria-label="عرض التفاصيل" onClick={() => navigate(`/records/order/${row.original.id}`)}><Eye className="size-4" /></Button>
         <Button variant="outline" size="icon" className="size-8" aria-label="قائمة التعبئة" onClick={() => printSlip(row.original)}><Printer className="size-4" /></Button>
         <Button variant="outline" size="icon" className="size-8" aria-label="بوليصة الشحن" onClick={() => printLabel(row.original.id)}><Truck className="size-4" /></Button>
       </div>) },

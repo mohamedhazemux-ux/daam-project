@@ -9,7 +9,8 @@ export const authService = {
     const admin = db.admins.find(a => a.email === email && a.pwd === pwd)
     if (!admin) throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة، يرجى التحقق من البيانات')
     audit('تسجيل دخول ناجح إلى لوحة التحكم', 'المصادقة', 'دخول')
-    const { pwd: _p, ...rest } = admin
+    const rest = { ...admin }
+    delete (rest as { pwd?: string }).pwd
     return { ...rest, portal: 'admin' }
   },
   async requestOtp(email: string) {

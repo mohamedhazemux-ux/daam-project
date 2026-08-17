@@ -13,7 +13,7 @@ import { merchantProductsService } from '@/services/merchant-products.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useT } from '@/lib/i18n'
 import { money, todayISO } from '@/lib/utils'
-import { FileText, Layers, Package, RefreshCw, ShoppingCart, Undo2, Wallet, FileDown, AlertTriangle } from 'lucide-react'
+import { FileText, Layers, Package, ShoppingCart, Undo2, Wallet, FileDown, AlertTriangle } from 'lucide-react'
 function Line({ data }: { data: number[] }) {
   const max = Math.max(...data), min = Math.min(...data)
   const pts = data.map((v, i) => ((i / (data.length - 1)) * 300).toFixed(1) + ',' + (70 - ((v - min) / (max - min || 1)) * 60).toFixed(1)).join(' ')
@@ -26,9 +26,15 @@ function HBars({ data }: { data: [string, number][] }) {
 function Pie({ data }: { data: [string, number][] }) {
   const total = data.reduce((s, d) => s + d[1], 0) || 1
   const colors = ['#0a0a0a', '#f59e0b', '#10b981', '#ef4444']
-  let acc = 0
-  const stops = data.map((d, i) => { const from = (acc / total) * 360; acc += d[1]; const to = (acc / total) * 360; return colors[i % 4] + ' ' + from + 'deg ' + to + 'deg' }).join(', ')
-  return <div className="flex items-center gap-4"><div className="size-24 shrink-0 rounded-full" style={{ background: 'conic-gradient(' + stops + ')' }} /><div className="space-y-1">{data.map((d, i) => <p key={d[0]} className="flex items-center gap-2 text-[11px] font-bold"><span className="size-2.5 rounded-full" style={{ background: colors[i % 4] }} /> {d[0]} ({d[1]})</p>)}</div></div>
+  const slices = data.reduce<Array<{ label: string; value: number; from: number; to: number }>>((acc, [label, value]) => {
+    const start = acc.length ? acc[acc.length - 1].to : 0
+    const from = (start / total) * 360
+    const to = ((start + value) / total) * 360
+    acc.push({ label, value, from, to })
+    return acc
+  }, [])
+  const stops = slices.map((slice, index) => colors[index % colors.length] + ' ' + slice.from + 'deg ' + slice.to + 'deg').join(', ')
+  return <div className="flex items-center gap-4"><div className="size-24 shrink-0 rounded-full" style={{ background: 'conic-gradient(' + stops + ')' }} /><div className="space-y-1">{slices.map((slice, i) => <p key={slice.label} className="flex items-center gap-2 text-[11px] font-bold"><span className="size-2.5 rounded-full" style={{ background: colors[i % 4] }} /> {slice.label} ({slice.value})</p>)}</div></div>
 }
 function Stacked({ data }: { data: [string, number, number][] }) {
   const max = Math.max(...data.map(d => d[1] + d[2]), 1)

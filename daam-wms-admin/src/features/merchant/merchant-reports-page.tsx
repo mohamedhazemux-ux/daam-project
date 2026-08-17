@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -75,7 +75,7 @@ function OrdersReport() {
       <CardContent className="space-y-4">
         <PeriodPicker period={period} setPeriod={setPeriod} from={from} setFrom={setFrom} to={to} setTo={setTo} err={err} />
         <div><Label>تصفية بحالات الطلب (اختياري)</Label>
-          <div className="flex flex-wrap gap-4 pt-2">{['معلق', 'قيد المعالجة', 'مكتمل', 'ملغي'].map(s => <label key={s} className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={statuses.includes(s)} onChange={e => setStatuses(x => e.target.checked ? [...x, s] : x.filter(y => y !== s))} /> {s}</label>)}</div></div>
+          <div className="flex flex-wrap gap-4 pt-2">{['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي'].map(s => <label key={s} className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={statuses.includes(s)} onChange={e => setStatuses(x => e.target.checked ? [...x, s] : x.filter(y => y !== s))} /> {s}</label>)}</div></div>
         <Button disabled={gen.isPending} onClick={() => gen.mutate()}>توليد التقرير</Button>
         {data && <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -96,8 +96,13 @@ function InventoryReport() {
   const [data, setData] = useState<any>(null)
   const gen = useMutation({ mutationFn: () => {
     if (!type) { setErr('نوع التقرير مطلوب'); throw new Error('نوع التقرير مطلوب') }
-    if (type === 'سجل حركات المخزون') { const r = range('نطاق مخصص', from, to); if (r.err) { setErr(r.err); throw new Error(r.err) } }
-    setErr(''); return merchantReportsService.inventory(user!.store!, type, [])
+    if (type === 'سجل حركات المخزون') {
+      const r = range('نطاق مخصص', from, to)
+      if (r.err) { setErr(r.err); throw new Error(r.err) }
+      setErr('')
+      return merchantReportsService.inventory(user!.store!, type, r.f, r.t)
+    }
+    setErr(''); return merchantReportsService.inventory(user!.store!, type)
   }, onSuccess: setData, onError: () => {} })
   return (
     <Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle className="text-sm">تقرير المخزون</CardTitle>{data && <ExportBtns />}</CardHeader>

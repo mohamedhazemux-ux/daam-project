@@ -11,10 +11,12 @@ import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/commo
 import { productsService } from '@/services/products.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import type { PlatformProduct } from '@/types'
 import { Plus, Search } from 'lucide-react'
 export default function PlatformProductsPage() {
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
   const qp = useMemo(() => ({ q: dq, status, page, pageSize: 10 }), [dq, status, page])
@@ -36,42 +38,42 @@ export default function PlatformProductsPage() {
     save.mutate()
   }
   const columns: ColumnDef<PlatformProduct, unknown>[] = [
-    { accessorKey: 'ref', header: 'المرجع', cell: ({ row }) => <span className="rounded-md bg-foreground px-2 py-0.5 text-[11px] font-extrabold text-background">{row.original.ref}</span> },
-    { id: 'name', header: 'اسم المنتج', cell: ({ row }) => <span className="font-bold">{row.original.name} <span className="ms-1 rounded-md bg-violet-50 px-2 py-0.5 text-[10.5px] font-extrabold text-violet-700">منصة</span></span> },
-    { accessorKey: 'desc', header: 'الوصف', cell: ({ row }) => <span className="block max-w-[300px] truncate">{row.original.desc}</span> },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'created', header: 'تاريخ الإنشاء', cell: ({ row }) => arDate(row.original.created) },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
+    { accessorKey: 'ref', header: t('المرجع'), cell: ({ row }) => <span className="rounded-md bg-foreground px-2 py-0.5 text-[11px] font-extrabold text-background">{row.original.ref}</span> },
+    { id: 'name', header: t('اسم المنتج'), cell: ({ row }) => <span className="font-bold">{row.original.name} <span className="ms-1 rounded-md bg-violet-50 px-2 py-0.5 text-[10.5px] font-extrabold text-violet-700">{t('منصة')}</span></span> },
+    { accessorKey: 'desc', header: t('الوصف'), cell: ({ row }) => <span className="block max-w-[300px] truncate">{row.original.desc}</span> },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'created', header: t('تاريخ الإنشاء'), cell: ({ row }) => arDate(row.original.created) },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
       <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => { setEditing(row.original); setForm({ name: row.original.name, desc: row.original.desc, status: row.original.status }); setFErr(''); setOpen(true) }}>تعديل</Button>
-        <Button size="sm" variant="outline" onClick={() => toggle.mutate(row.original.ref)}>{row.original.status === 'نشط' ? 'تعطيل' : 'تفعيل'}</Button>
-        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleting(row.original)}>حذف</Button>
+        <Button size="sm" variant="outline" onClick={() => { setEditing(row.original); setForm({ name: row.original.name, desc: row.original.desc, status: row.original.status }); setFErr(''); setOpen(true) }}>{t('تعديل')}</Button>
+        <Button size="sm" variant="outline" onClick={() => toggle.mutate(row.original.ref)}>{row.original.status === 'نشط' ? t('تعطيل') : t('تفعيل')}</Button>
+        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleting(row.original)}>{t('حذف')}</Button>
       </div>) },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
       <div className="border-b bg-muted/40 p-3 text-xs font-semibold text-muted-foreground">
-        <b>منتجات المنصة (CR-002):</b> منتجات رئيسية غير مخزّنة متاحة لجميع التجار دون تتبع مخزون. المرجع PLT-00X يُولّد تلقائيًا ولا يمكن تعديله.
+        <b>{t('منتجات المنصة (CR-002)')}:</b> {t('منتجات رئيسية غير مخزّنة متاحة لجميع التجار دون تتبع مخزون. المرجع PLT-00X يُولّد تلقائيًا ولا يمكن تعديله.')}
       </div>
       <DataTable columns={columns} data={data?.rows ?? []} total={data?.total ?? 0} page={page} pageSize={10} onPageChange={setPage} loading={isLoading} getRowId={r => r.ref}
         toolbar={
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث في منتجات المنصة..." className="pe-9" aria-label="بحث في منتجات المنصة" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث في منتجات المنصة...')} className="pe-9" aria-label={t('بحث في منتجات المنصة')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              <option value="نشط">نشط</option>
-              <option value="غير نشط">غير نشط</option>
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              <option value="نشط">{t('نشط')}</option>
+              <option value="غير نشط">{t('غير نشط')}</option>
             </select>
-            <Button size="sm" className="ms-auto" onClick={() => { setEditing(null); setForm({ name: '', desc: '', status: 'نشط' }); setFErr(''); setOpen(true) }}><Plus className="size-4" /> إنشاء منتج منصة</Button>
+            <Button size="sm" className="ms-auto" onClick={() => { setEditing(null); setForm({ name: '', desc: '', status: 'نشط' }); setFErr(''); setOpen(true) }}><Plus className="size-4" /> {t('إنشاء منتج منصة')}</Button>
           </div>
         } />
-      <Modal open={open} onClose={() => setOpen(false)} title={editing ? 'تعديل منتج منصة — ' + editing.ref : 'إنشاء منتج منصة جديد'}
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? t('تعديل منتج منصة — ') + editing.ref : t('إنشاء منتج منصة جديد')}
         footer={<>
-          <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button disabled={save.isPending} onClick={submit}>حفظ</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t('إلغاء')}</Button>
+          <Button disabled={save.isPending} onClick={submit}>{t('حفظ')}</Button>
         </>}>
         <div className="grid gap-3">
           {editing && <p className="text-xs font-bold text-muted-foreground">المرجع الداخلي: <b dir="ltr">{editing.ref}</b> (غير قابل للتعديل)</p>}

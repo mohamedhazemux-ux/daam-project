@@ -1,4 +1,4 @@
-﻿import { db } from '@/mocks/db'
+import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
 import type { Approval, ListQuery, ListResult } from '@/types'
@@ -10,7 +10,7 @@ export const approvalsService = {
     const type = q.type as string
     const urgency = q.urgency as string
     const rows = [...db.approvals]
-      .filter(a => (!t || [a.id, a.type, a.who, a.title].some(x => x.toLowerCase().includes(t))) && (!type || a.type === type) && (!urgency || a.urgency === urgency))
+      .filter(a => (!t || [a.id, a.type, a.who, a.title].some(x => x.toLowerCase().includes(t))) && (!type || a.type === type) && (!urgency || (urgency === 'critical' ? a.urgency !== 'عادي' : a.urgency === urgency)))
       .sort((a, b) => URGENCY[a.urgency] - URGENCY[b.urgency] || a.date.localeCompare(b.date))
     return paginate(rows, q)
   },

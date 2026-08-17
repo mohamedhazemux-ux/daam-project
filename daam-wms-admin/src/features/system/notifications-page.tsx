@@ -1,5 +1,6 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,10 +9,12 @@ import { StatusBadge, selectCls } from '@/components/common'
 import { systemService } from '@/services/system.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { Search } from 'lucide-react'
+import { getNotificationRoute } from '@/lib/utils'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { AppNotification } from '@/types'
 export default function NotificationsPage() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [q, setQ] = useState(''); const [type, setType] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
   const qp = useMemo(() => ({ q: dq, type, page, pageSize: 10 }), [dq, type, page])
@@ -19,7 +22,20 @@ export default function NotificationsPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['notifications'] })
   const readAll = useMutation({ mutationFn: () => systemService.markAllRead(), onSuccess: () => { toast.success('تم تحديد جميع الإشعارات كمقروءة'); invalidate() } })
   const columns: ColumnDef<AppNotification, unknown>[] = [
-    { accessorKey: 'title', header: 'العنوان', cell: ({ row }) => <b>{row.original.title}</b> },
+    { accessorKey: 'title', header: 'العنوان', cell: ({ row }) => (
+      <button 
+        onClick={() => {
+          if (row.original.unread) {
+            systemService.markRead(row.original.id)
+            invalidate()
+          }
+          navigate(getNotificationRoute(row.original, false))
+        }} 
+        className="font-bold text-start hover:underline text-blue-600 hover:text-blue-800"
+      >
+        {row.original.title}
+      </button>
+    ) },
     { accessorKey: 'msg', header: 'الرسالة', cell: ({ row }) => <span className="block max-w-[380px] truncate">{row.original.msg}</span> },
     { id: 'type', header: 'النوع', cell: ({ row }) => <StatusBadge value={row.original.type} /> },
     { accessorKey: 'time', header: 'الوقت' },

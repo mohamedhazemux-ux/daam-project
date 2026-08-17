@@ -54,7 +54,31 @@ export function downloadCSV(filename: string, headers: string[], rows: (string |
 /** توليد كلمة مرور عشوائية */
 export function generatePassword(len = 8) {
   const sets = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghjkmnpqrstuvwxyz', '23456789', '@#$%&']
-  let out = sets.map(s => s[Math.floor(Math.random() * s.length)])
+  const out: string[] = sets.map(s => s[Math.floor(Math.random() * s.length)])
   while (out.length < len) out.push(sets[Math.floor(Math.random() * 4)][Math.floor(Math.random() * 20) % 26] ?? 'x')
   return out.sort(() => Math.random() - 0.5).join('')
+}
+
+/** تحديد راوت الإشعار */
+export function getNotificationRoute(notif: { title: string; msg: string; type?: string }, isMerchant: boolean): string {
+  const text = (notif.title + ' ' + notif.msg).toLowerCase();
+  
+  if (isMerchant) {
+    if (text.includes('ord-') || text.includes('طلب')) return '/merchant/orders';
+    if (text.includes('sr-') || text.includes('مخزون') || text.includes('تخزين')) return '/merchant/inventory';
+    if (text.includes('inv-') || text.includes('دفع') || text.includes('رصيد') || text.includes('المحفظة') || text.includes('فاتورة')) return '/merchant/wallet';
+    if (text.includes('ret-') || text.includes('مرتجع') || text.includes('إرجاع')) return '/merchant/returns';
+    if (text.includes('srv-') || text.includes('خدمة')) return '/merchant/services';
+    return '/merchant';
+  } else {
+    // Admin routing
+    if (text.includes('apr-') || text.includes('موافقة')) return '/approvals';
+    if (text.includes('ret-') || text.includes('مرتجع') || text.includes('إرجاع')) return '/returns';
+    if (text.includes('srv-') || text.includes('طلب خدمة') || text.includes('خدمة')) return '/services/requests';
+    if (text.includes('sr-') || text.includes('طلب مخزون')) return '/inventory/requests';
+    if (text.includes('تجاوز حد التخزين') || text.includes('سعة') || text.includes('تخزين') || text.includes('مخزون')) return '/inventory/storage';
+    if (text.includes('اشتراك')) return '/services/subscriptions';
+    if (text.includes('ord-') || text.includes('طلب')) return '/orders';
+    return '/';
+  }
 }

@@ -26,5 +26,6 @@ export function saveDb() {
 }
 setInterval(saveDb, 3000)
 window.addEventListener('beforeunload', saveDb)
-;(window as any).__resetDb = () => { localStorage.removeItem(KEY); localStorage.removeItem('daam-merchant-passwords'); location.reload() }
+const win = window as typeof window & { __resetDb?: () => void }
+win.__resetDb = () => { localStorage.removeItem(KEY); localStorage.removeItem('daam-merchant-passwords'); location.reload() }
 console.info('💾 طبقة الحفظ التلقائي فعّالة — لإعادة تعيين البيانات التجريبية نفّذ: __resetDb()')

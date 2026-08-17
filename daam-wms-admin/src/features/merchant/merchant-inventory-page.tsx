@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -41,7 +41,7 @@ function LevelsSection() {
   const { data: st } = useQuery({ queryKey: ['m-storage', user?.store], queryFn: () => merchantInventoryService.storage(user!.store!) })
   const { data: prods } = useQuery({ queryKey: ['m-prod-opts'], queryFn: () => merchantProductsService.list({ store: user?.store ?? '', page: 1, pageSize: 100 }) })
   const [modal, setModal] = useState<'' | 'إضافة' | 'سحب'>('')
-  const [form, setForm] = useState({ product: '', qty: 0, notes: '' })
+  const [form, setForm] = useState({ product: '', qty: 0, notes: '', attachment: '' })
   const [fErr, setFErr] = useState('')
   const submit = useMutation({
     mutationFn: () => merchantInventoryService.submitRequest(user!.store!, modal as 'إضافة' | 'سحب', form),
@@ -92,8 +92,8 @@ function LevelsSection() {
               </select>
               {op && <Input type="number" className="w-24" value={val} onChange={e => { setVal(e.target.value); setPage(1) }} aria-label="قيمة الكمية" />}
               <div className="ms-auto flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => { setForm({ product: '', qty: 0, notes: '' }); setFErr(''); setModal('إضافة') }}><PackagePlus className="size-4" /> طلب إضافة مخزون</Button>
-                <Button size="sm" variant="outline" onClick={() => { setForm({ product: '', qty: 0, notes: '' }); setFErr(''); setModal('سحب') }}><PackageMinus className="size-4" /> طلب سحب مخزون</Button>
+                 <Button size="sm" variant="outline" onClick={() => { setForm({ product: '', qty: 0, notes: '', attachment: '' }); setFErr(''); setModal('إضافة') }}><PackagePlus className="size-4" /> طلب إضافة مخزون</Button>
+                 <Button size="sm" variant="outline" onClick={() => { setForm({ product: '', qty: 0, notes: '', attachment: '' }); setFErr(''); setModal('سحب') }}><PackageMinus className="size-4" /> طلب سحب مخزون</Button>
                 <Button size="sm" variant="outline" onClick={() => { downloadCSV('stock-levels', ['المنتج', 'SKU', 'متاح', 'محجوز', 'كلي'], (data?.rows ?? []).map(r => [r.p, r.sku, r.avail, r.res, r.total])); toast.success('تم تصدير مستويات المخزون بنجاح') }}>تصدير</Button>
               </div>
             </div>
@@ -109,6 +109,11 @@ function LevelsSection() {
             </select></div>
           <div><Label>الكمية <span className="text-destructive">*</span></Label><Input type="number" min={1} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
           <div><Label>الملاحظات (اختياري — 500 حرف)</Label><Textarea maxLength={500} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+          <div><Label>المرفقات (اختياري — PDF/PNG/JPG)</Label>
+            <Input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={e => {
+              const file = e.target.files?.[0]
+              setForm(f => ({ ...f, attachment: file ? file.name : '' }))
+            }} /></div>
         </div>
         {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
       </Modal>
@@ -159,7 +164,13 @@ function RequestsSection() {
               <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>))}
           </div>
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">الملاحظات</p>
-          <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{merchantInventoryService.notesOf(viewing.id) || '—'}</p>
+          <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.notes || '—'}</p>
+          <p className="mb-1 text-xs font-extrabold text-muted-foreground">المرفقات</p>
+          <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">
+            {viewing.attachment ? (
+              <span className="text-blue-600">📎 {viewing.attachment}</span>
+            ) : '—'}
+          </p>
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">سجل الأنشطة</p>
           <div className="space-y-1">
             <p className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• إنشاء الطلب بواسطة التاجر — {viewing.date}</p>

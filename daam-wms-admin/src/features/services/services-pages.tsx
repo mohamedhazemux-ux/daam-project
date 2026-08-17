@@ -1,5 +1,6 @@
 ﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ import { Search } from 'lucide-react'
 const STAFF = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن', 'ناصر كمال']
 const UNITS = ['لكل قطعة', 'لكل ساعة', 'لكل طبلية', 'لكل طلب', 'ثابتة']
 export function ServiceRequestsPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [q, setQ] = useState(''); const [urgency, setUrgency] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
@@ -23,6 +25,7 @@ export function ServiceRequestsPage() {
   const { data, isLoading } = useQuery({ queryKey: ['service-requests', qp], queryFn: () => servicesService.requests(qp) })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['service-requests'] })
   const [approving, setApproving] = useState<ServiceRequest | null>(null)
+  const [viewing, setViewing] = useState<ServiceRequest | null>(null)
   const [form, setForm] = useState({ cost: 0, date: todayISO(), staff: '', notes: '' })
   const [fErr, setFErr] = useState('')
   const [rejecting, setRejecting] = useState<string | null>(null)
@@ -42,6 +45,7 @@ export function ServiceRequestsPage() {
     { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => { const s = row.original; return (
       <div className="flex gap-1">
+        <Button size="sm" variant="outline" onClick={() => navigate(`/records/service-request/${s.ref}`)}>عرض</Button>
         {s.status === 'معلق' && <>
           <Button size="sm" variant="outline" onClick={() => { setApproving(s); setForm({ cost: s.cost, date: todayISO(), staff: '', notes: '' }); setFErr('') }}>اعتماد</Button>
           <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(s.ref); setReason(''); setRErr('') }}>رفض</Button>
@@ -117,6 +121,54 @@ export function ServiceRequestsPage() {
         <Label>سبب الرفض <span className="text-destructive">*</span> (10 – 500 حرف)</Label>
         <Textarea value={reason} maxLength={500} onChange={e => setReason(e.target.value)} />
         {rErr && <p className="mt-1 text-xs font-bold text-destructive">{rErr}</p>}
+      </Modal>
+
+      <Modal open={!!viewing} onClose={() => setViewing(null)} title={'تفاصيل طلب الخدمة — ' + (viewing?.ref ?? '')}
+        footer={<>
+          <Button variant="outline" onClick={() => setViewing(null)}>إغلاق</Button>
+        </>}>
+        {viewing && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['المرجع', viewing.ref],
+                ['التاجر', viewing.m],
+                ['الخدمة', viewing.type],
+                ['المنتج المرتبط', viewing.prod],
+                ['الكمية', String(viewing.qty)],
+                ['التكلفة التقديرية', money(viewing.cost)],
+                ['الإلحاح', viewing.urgency],
+                ['التاريخ المفضل', arDate(viewing.date)],
+                ['المتطلبات', viewing.req],
+                ['الحالة', viewing.status],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2">
+                  <p className="text-[11px] font-bold text-muted-foreground">{k}</p>
+                  <p className="text-[13px] font-extrabold">{v}</p>
+                </div>
+              ))}
+            </div>
+            {viewing.notes && (
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground">الملاحظات</p>
+                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm font-semibold">
+                  {viewing.notes}
+                </div>
+              </div>
+            )}
+            {viewing.attachment && (
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
+                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
+                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>تحميل المرفق</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   )

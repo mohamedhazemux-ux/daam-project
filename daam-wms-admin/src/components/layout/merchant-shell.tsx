@@ -1,7 +1,8 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth-store'
 import { useUIStore } from '@/store/ui-store'
+import { usePrefsStore } from '@/store/prefs-store'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -37,7 +38,7 @@ function SidebarContent() {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t px-4 py-3 text-[11px] font-bold text-muted-foreground">بوابة التجار — الإصدار 2.0</div>
+      <div className="border-t px-4 py-3 text-[11px] font-bold text-muted-foreground">{t('بوابة التجار')} — {t('الإصدار')} 2.0</div>
     </div>
   )
 }
@@ -49,24 +50,26 @@ export function MerchantShell() {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const t = useT()
+  const lang = usePrefsStore(s => s.lang)
   const title = TITLES[location.pathname] ?? 'لوحة التحكم'
+  const sheetSide = lang === 'ar' ? 'right' : 'left'
   return (
     <div className="flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-[262px] shrink-0 border-e bg-card lg:block"><SidebarContent /></aside>
       <Sheet open={sidebarOpen} onOpenChange={v => { if (!v) closeSidebar() }}>
-        <SheetContent side="left" className="w-[280px] p-0"><SidebarContent /></SheetContent>
+        <SheetContent side={sheetSide} className="w-[280px] p-0"><SidebarContent /></SheetContent>
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card px-4 lg:px-6">
-          <Button variant="outline" size="icon" className="lg:hidden" onClick={toggleSidebar} aria-label="فتح القائمة"><Menu className="size-4" /></Button>
+          <Button variant="outline" size="icon" className="lg:hidden" onClick={toggleSidebar} aria-label={t('فتح القائمة')}><Menu className="size-4" /></Button>
           <div className="min-w-0">
             <h1 className="truncate text-[15px] font-extrabold">{t(title)}</h1>
-            <p className="hidden text-[11px] font-semibold text-muted-foreground sm:block">{user?.store} / {title}</p>
+            <p className="hidden text-[11px] font-semibold text-muted-foreground sm:block">{user?.store} / {t(title)}</p>
           </div>
           <div className="ms-auto flex items-center gap-2">
             <NotificationsPopover />
             <div className="relative">
-              <button onClick={() => setMenuOpen(o => !o)} className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent" aria-label="قائمة الحساب">
+              <button onClick={() => setMenuOpen(o => !o)} className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent" aria-label={t('قائمة الحساب')}>
                 <Avatar className="size-8"><AvatarFallback className="bg-foreground text-background">{initials(user?.name ?? '')}</AvatarFallback></Avatar>
                 <span className="hidden text-[13px] font-extrabold md:block">{user?.name}</span>
               </button>
@@ -75,8 +78,8 @@ export function MerchantShell() {
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
                   <div className="absolute end-0 z-50 mt-2 w-56 rounded-xl border bg-card p-2 shadow-lg">
                     <p className="border-b px-2 pb-2 pt-1 text-xs font-bold text-muted-foreground">{user?.email}</p>
-                    <button onClick={() => { setMenuOpen(false); navigate('/merchant/profile') }} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-[13px] font-bold hover:bg-accent"><User className="size-4" /> الملف الشخصي</button>
-                    <button onClick={() => { audit('تسجيل خروج تاجر', 'المصادقة', 'خروج'); logout(); navigate('/merchant/login') }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-[13px] font-bold text-destructive hover:bg-destructive/10"><LogOut className="size-4" /> تسجيل الخروج</button>
+                    <button onClick={() => { setMenuOpen(false); navigate('/merchant/profile') }} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-[13px] font-bold hover:bg-accent"><User className="size-4" /> {t('الملف الشخصي')}</button>
+                    <button onClick={() => { audit('تسجيل خروج تاجر', 'المصادقة', 'خروج'); logout(); navigate('/merchant/login') }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-[13px] font-bold text-destructive hover:bg-destructive/10"><LogOut className="size-4" /> {t('تسجيل الخروج')}</button>
                   </div>
                 </>
               )}

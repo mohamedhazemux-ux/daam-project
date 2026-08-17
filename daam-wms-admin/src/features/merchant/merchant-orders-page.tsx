@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -95,7 +95,7 @@ export default function MerchantOrdersPage() {
             </div>
             <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
               <option value="">كل الحالات</option>
-              {['معلق', 'قيد المعالجة', 'مكتمل', 'ملغي'].map(s => <option key={s} value={s}>{s}</option>)}
+              {['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <select className={selectCls} value={ship} onChange={e => { setShip(e.target.value); setPage(1) }} aria-label="تصفية حسب مسؤولية الشحن">
               <option value="">مسؤولية الشحن: الكل</option>

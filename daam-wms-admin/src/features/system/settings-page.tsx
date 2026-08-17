@@ -36,30 +36,30 @@ export default function SettingsPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-2 shadow-sm">
-        {TABS.map(([v, l]) => <button key={v} onClick={() => setTab(v)} className={tab === v ? 'rounded-lg bg-foreground px-4 py-2 text-[13px] font-extrabold text-background' : 'rounded-lg px-4 py-2 text-[13px] font-bold text-muted-foreground hover:bg-accent'}>{l}</button>)}
+        {TABS.map(([v, l]) => <button key={v} onClick={() => setTab(v)} className={tab === v ? 'rounded-lg bg-foreground px-4 py-2 text-[13px] font-extrabold text-background' : 'rounded-lg px-4 py-2 text-[13px] font-bold text-muted-foreground hover:bg-accent'}>{t(l)}</button>)}
       </div>
       {tab === 'general' && (
         <div className="space-y-4">
-          <Card><CardHeader><CardTitle className="text-sm">المظهر واللغة</CardTitle></CardHeader>
+          <Card><CardHeader><CardTitle className="text-sm">{t('المظهر واللغة')}</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <div><Label>وضع العرض</Label>
+              <div><Label>{t('وضع العرض')}</Label>
                 <select className={selectCls + ' w-full'} value={theme} onChange={e => usePrefsStore.getState().setTheme(e.target.value as 'light' | 'dark')}>
-                  <option value="light">فاتح (أبيض)</option>
-                  <option value="dark">داكن (أسود)</option>
+                  <option value="light">{t('فاتح (أبيض)')}</option>
+                  <option value="dark">{t('داكن (أسود)')}</option>
                 </select></div>
-              <div><Label>لغة الواجهة</Label>
+              <div><Label>{t('لغة الواجهة')}</Label>
                 <select className={selectCls + ' w-full'} value={lang} onChange={e => usePrefsStore.getState().setLang(e.target.value as 'ar' | 'en')}>
-                  <option value="ar">العربية</option>
+                  <option value="ar">{t('العربية')}</option>
                   <option value="en">English</option>
                 </select></div>
             </CardContent></Card>
-          <Card><CardHeader><CardTitle className="text-sm">الإعدادات العامة</CardTitle></CardHeader>
+          <Card><CardHeader><CardTitle className="text-sm">{t('الإعدادات العامة')}</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <div><Label>اسم المنصة (3 – 100 حرف) <span className="text-destructive">*</span></Label><Input defaultValue="الدعم الرائدة" /></div>
-              <div><Label>شعار المنصة (PNG/SVG حتى 2MB)</Label><Input type="file" accept=".png,.svg" /></div>
-              <div><Label>العملة الافتراضية</Label><select className={selectCls + ' w-full'} defaultValue="SAR"><option value="SAR">ريال سعودي (SAR)</option><option value="AED">درهم إماراتي</option><option value="KWD">دينار كويتي</option></select></div>
-              <div><Label>اللغة الافتراضية</Label><select className={selectCls + ' w-full'} defaultValue="ar"><option value="ar">العربية</option><option value="en">English</option></select></div>
-              <div className="md:col-span-2"><Button onClick={() => systemService.saveSettings('عام').then(() => toast.success('تم تحديث معاملات النظام بنجاح — تم تطبيق التغييرات فورًا'))}>حفظ التغييرات</Button></div>
+              <div><Label>{t('اسم المنصة (3 – 100 حرف)')} <span className="text-destructive">*</span></Label><Input defaultValue="الدعم الرائدة" /></div>
+              <div><Label>{t('شعار المنصة (PNG/SVG حتى 2MB)')}</Label><Input type="file" accept=".png,.svg" /></div>
+              <div><Label>{t('العملة الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="SAR"><option value="SAR">ريال سعودي (SAR)</option><option value="AED">درهم إماراتي</option><option value="KWD">دينار كويتي</option></select></div>
+              <div><Label>{t('اللغة الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="ar"><option value="ar">{t('العربية')}</option><option value="en">English</option></select></div>
+              <div className="md:col-span-2"><Button onClick={() => systemService.saveSettings('عام').then(() => toast.success('تم تحديث معاملات النظام بنجاح — تم تطبيق التغييرات فورًا'))}>{t('حفظ التغييرات')}</Button></div>
             </CardContent></Card>
         </div>
       )}

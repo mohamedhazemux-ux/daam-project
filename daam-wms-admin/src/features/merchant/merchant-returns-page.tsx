@@ -29,14 +29,25 @@ export default function MerchantReturnsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [orderRef, setOrderRef] = useState('')
   const [items, setItems] = useState<ReturnItem[]>([])
-  const [form, setForm] = useState({ type: '', refundMethod: '', notes: '' })
+  const [form, setForm] = useState({ type: '', refundMethod: '', notes: '', attachments: [] as string[] })
   const [fErr, setFErr] = useState('')
   const [viewing, setViewing] = useState<MerchantReturn | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
   const { data: delivered } = useQuery({ queryKey: ['m-delivered', user?.store], queryFn: () => merchantReturnsService.deliveredOrders(user!.store!) })
   const order = (delivered ?? []).find(o => o.ref === orderRef)
+  const onFiles = (list: FileList | null) => {
+    if (!list) return
+    const arr = Array.from(list)
+    if (form.attachments.length + arr.length > 5) { setFErr('الحد الأقصى 5 مرفقات'); return }
+    for (const f of arr) {
+      if (!/\.(jpg|png|jpeg|pdf)$/i.test(f.name)) { setFErr('امتداد غير صالح، يرجى رفع ملف بصيغة JPG أو PNG أو JPEG أو PDF'); return }
+      if (f.size > 10 * 1024 * 1024) { setFErr('الحجم الأقصى للملف 10 ميجابايت، يرجى استخدام ملف آخر'); return }
+    }
+    setFErr('')
+    setForm(f => ({ ...f, attachments: [...f.attachments, ...arr.map(x => x.name)] }))
+  }
   const create = useMutation({
-    mutationFn: () => merchantReturnsService.create(user!.store!, user!.email, { orderRef, cust: order?.cust ?? '', phone: '0512345678', deliveredAt: order?.date ?? '', items, type: form.type, refundMethod: form.refundMethod, notes: form.notes }),
+    mutationFn: () => merchantReturnsService.create(user!.store!, user!.email, { orderRef, cust: order?.cust ?? '', phone: '0512345678', deliveredAt: order?.date ?? '', items, type: form.type, refundMethod: form.refundMethod, notes: form.notes, attachments: form.attachments }),
     onSuccess: () => { toast.success('تم إرسال طلب الإرجاع بنجاح'); invalidate(); setCreateOpen(false) },
   })
   const cancel = useMutation({ mutationFn: (ref: string) => merchantReturnsService.cancel(ref), onSuccess: (_, ref) => { toast.success('تم إلغاء طلب الإرجاع ' + ref + ' بنجاح'); invalidate(); setCancelling(null); setViewing(null) }, onError: e => toast.error((e as Error).message) })
@@ -116,7 +127,7 @@ export default function MerchantReturnsPage() {
             <Button variant="outline" size="sm" onClick={() => { setStatus(''); setType(''); setFrom(''); setTo(''); setPage(1) }}>إعادة التعيين</Button>
             <div className="ms-auto flex gap-2">
               <Button variant="outline" size="sm" onClick={() => { downloadCSV('my-returns', ['المرجع', 'الطلب الأصلي', 'العميل', 'الأصناف', 'النوع', 'الحالة', 'طريقة الاسترداد', 'التاريخ'], (data?.rows ?? []).map(r => [r.ref, r.order, r.cust, r.totalItems, r.type, r.status, r.refundMethod, r.createdAt])); toast.success('تم تصدير طلبات الإرجاع بنجاح') }}>تصدير</Button>
-              <Button size="sm" onClick={() => { setOrderRef(''); setItems([]); setForm({ type: '', refundMethod: '', notes: '' }); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> إنشاء طلب إرجاع</Button>
+              <Button size="sm" onClick={() => { setOrderRef(''); setItems([]); setForm({ type: '', refundMethod: '', notes: '', attachments: [] }); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> إنشاء طلب إرجاع</Button>
             </div>
           </div>
         } />
@@ -175,6 +186,8 @@ export default function MerchantReturnsPage() {
               <option value="تحويل بنكي">تحويل بنكي</option>
             </select></div>
           <div className="md:col-span-2"><Label>ملاحظات الإرجاع (اختياري — 500 حرف)</Label><Textarea maxLength={500} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+          <div className="md:col-span-2"><Label>المرفقات (اختياري — JPG/PNG/JPEG/PDF حتى 10MB — حتى 5 ملفات)</Label><Input type="file" multiple accept=".jpg,.png,.jpeg,.pdf" onChange={e => onFiles(e.target.files)} />
+            {form.attachments.length > 0 && <p className="mt-1 text-[11px] font-bold text-muted-foreground">{form.attachments.map(x => '📎 ' + x).join('  ')}</p>}</div>
         </div>
         {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
       </Modal>
@@ -195,6 +208,8 @@ export default function MerchantReturnsPage() {
           </div>
           <p className="mb-1 mt-3 text-xs font-extrabold text-muted-foreground">ملاحظات الإرجاع</p>
           <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.notes || '—'}</p>
+          <p className="mb-1 text-xs font-extrabold text-muted-foreground">المرفقات</p>
+          <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.attachments?.length ? viewing.attachments.map(x => '📎 ' + x).join('  ') : '—'}</p>
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">الخط الزمني للحالات</p>
           <div className="space-y-1">{viewing.timeline.map((t, i) => <p key={i} className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {t}</p>)}</div>
         </>}

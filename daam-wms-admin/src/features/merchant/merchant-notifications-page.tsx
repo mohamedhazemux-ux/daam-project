@@ -1,5 +1,6 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
@@ -9,8 +10,11 @@ import { StatusBadge, selectCls } from '@/components/common'
 import { merchantNotificationsService, type MNotif } from '@/services/merchant-notifications.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { Search } from 'lucide-react'
+import { getNotificationRoute } from '@/lib/utils'
+
 export default function MerchantNotificationsPage() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [type, setType] = useState('')
   const [page, setPage] = useState(1)
@@ -19,22 +23,35 @@ export default function MerchantNotificationsPage() {
   const { data, isLoading } = useQuery({ queryKey: ['m-notifs', qp], queryFn: () => merchantNotificationsService.list(qp), refetchInterval: 60_000 })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['m-notifs'] })
   const markAll = useMutation({ mutationFn: () => merchantNotificationsService.markAllRead(), onSuccess: () => { toast.success('تم تحديد جميع الإشعارات كمقروءة'); invalidate() } })
-  const columns = [
-    { accessorKey: 'title', header: 'العنوان', cell: ({ row }: any) => <b>{row.original.title}</b> },
-    { accessorKey: 'msg', header: 'الرسالة', cell: ({ row }: any) => <span className="block max-w-[380px] truncate">{row.original.msg.length > 100 ? row.original.msg.slice(0, 100) + '…' : row.original.msg}</span> },
-    { id: 'type', header: 'النوع', cell: ({ row }: any) => <StatusBadge value={row.original.type} /> },
-    { accessorKey: 'ref', header: 'المرجع المرتبط', cell: ({ row }: any) => row.original.ref ?? '—' },
-    { id: 'read', header: 'حالة القراءة', cell: ({ row }: any) => row.original.unread ? <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">غير مقروء</span> : <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-600">مقروء</span> },
+  const columns: ColumnDef<MNotif, unknown>[] = [
+    { accessorKey: 'title', header: 'العنوان', cell: ({ row }) => (
+      <button
+        onClick={() => {
+          if (row.original.unread) {
+            merchantNotificationsService.markRead(row.original.id)
+            invalidate()
+          }
+          navigate(getNotificationRoute(row.original, true))
+        }}
+        className="font-bold text-start hover:underline text-blue-600 hover:text-blue-800"
+      >
+        {row.original.title}
+      </button>
+    ) },
+    { accessorKey: 'msg', header: 'الرسالة', cell: ({ row }) => <span className="block max-w-[380px] truncate">{row.original.msg.length > 100 ? row.original.msg.slice(0, 100) + '…' : row.original.msg}</span> },
+    { id: 'type', header: 'النوع', cell: ({ row }) => <StatusBadge value={row.original.type} /> },
+    { accessorKey: 'ref', header: 'المرجع المرتبط', cell: ({ row }) => row.original.ref ?? '—' },
+    { id: 'read', header: 'حالة القراءة', cell: ({ row }) => row.original.unread ? <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">غير مقروء</span> : <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-600">مقروء</span> },
     { accessorKey: 'time', header: 'تم الاستلام في' },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }: any) => (
+    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
       <div className="flex gap-1">
         {row.original.unread && <Button size="sm" variant="outline" onClick={() => { merchantNotificationsService.markRead(row.original.id); invalidate() }}>تحديد كمقروء</Button>}
         <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { merchantNotificationsService.remove(row.original.id); invalidate(); toast.success('تم حذف الإشعار') }}>حذف</Button>
       </div>) },
-  ] as ColumnDef<any, unknown>[]
+  ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
-      <DataTable columns={columns} data={data?.rows ?? []} total={data?.total ?? 0} page={page} pageSize={10} onPageChange={setPage} loading={isLoading} getRowId={(r: any) => r.id}
+      <DataTable columns={columns} data={data?.rows ?? []} total={data?.total ?? 0} page={page} pageSize={10} onPageChange={setPage} loading={isLoading} getRowId={r => r.id}
         emptyTitle="لا توجد إشعارات"
         toolbar={
           <div className="flex flex-wrap items-center gap-2 border-b p-3">

@@ -51,11 +51,15 @@ export function MerchantFormDialog({ open, onOpenChange, merchant, onSaved }: {
         return
       }
       if (merchant) {
-        const { email: _e, natId: _n, password: _p, ...patch } = v
+        const patch = { ...v }
+        delete (patch as { email?: string }).email
+        delete (patch as { natId?: string }).natId
+        delete (patch as { password?: string }).password
         await merchantService.update(merchant.id, patch)
         toast.success('تم تحديث بيانات التاجر بنجاح')
       } else {
-        const { password: _password, ...merchantInput } = v
+        const merchantInput = { ...v }
+        delete (merchantInput as { password?: string }).password
         await merchantService.create(merchantInput)
         toast.success('تم إنشاء التاجر بنجاح — تم إرسال بيانات الدخول إلى بريد التاجر')
       }
@@ -142,6 +146,24 @@ export function MerchantDetailDialog({ merchant, onClose }: { merchant: Merchant
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {kv.map(([k, v]) => <div key={k as string} className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>)}
       </div>
+      {merchant.notes && (
+        <>
+          <h4 className="mt-4 text-sm font-extrabold">الملاحظات</h4>
+          <div className="rounded-lg border bg-muted/40 p-3 text-sm font-semibold">{merchant.notes}</div>
+        </>
+      )}
+      {merchant.attachments && merchant.attachments.length > 0 && (
+        <>
+          <h4 className="mt-4 text-sm font-extrabold">المرفقات</h4>
+          <div className="flex flex-wrap gap-2">
+            {merchant.attachments.filter(Boolean).map(item => (
+              <span key={item} className="rounded-md border bg-card px-2 py-1 text-[11px] font-bold">
+                📎 {item}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
       <h4 className="mt-4 text-sm font-extrabold">حد التخزين المجاني (CR-003)</h4>
       <div className="flex h-2 overflow-hidden rounded-full bg-muted"><div className={'h-full ' + (st === 'متجاوز' ? 'bg-destructive' : st === 'تحذير' ? 'bg-warning' : 'bg-foreground')} style={{ width: Math.min(100, pct) + '%' }} /></div>
       <div className="mt-2 flex flex-wrap gap-4 text-xs font-bold text-muted-foreground">

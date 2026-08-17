@@ -40,8 +40,9 @@ const SettingsPage = lazy(() => import('@/features/system/settings-page'))
 const AuditLogsPage = lazy(() => import('@/features/system/audit-logs-page'))
 const NotificationsPage = lazy(() => import('@/features/system/notifications-page'))
 const ProfilePage = lazy(() => import('@/features/profile/profile-page'))
+const RecordDetailPage = lazy(() => import('@/features/shared/record-detail-page'))
 function PageLoader() {
-  return <div className="flex h-64 items-center justify-center"><div className="size-8 animate-spin rounded-full border-4 border-muted border-t-foreground" aria-label="جارٍ التحميل" /></div>
+  return <div className="flex h-64 items-center justify-center"><div className="size-8 animate-spin rounded-full border-4 border-muted border-t-foreground" aria-label="Loading" /></div>
 }
 function Lz({ C }: { C: React.ComponentType }) {
   return <Suspense fallback={<PageLoader />}><C /></Suspense>
@@ -64,7 +65,8 @@ export function AppRouter() {
           <Route path="/merchant/wallet" element={<Lz C={MerchantWalletPage} />} />
           <Route path="/merchant/services" element={<Lz C={MerchantServicesPage} />} />
           <Route path="/merchant/notifications" element={<Lz C={MerchantNotificationsPage} />} />
-          <Route path="/merchant/reports" element={<Lz C={MerchantReportsPage} />} />`r`n        <Route path="/merchant/settings" element={<Lz C={MerchantSettingsPage} />} />
+          <Route path="/merchant/reports" element={<Lz C={MerchantReportsPage} />} />
+          <Route path="/merchant/settings" element={<Lz C={MerchantSettingsPage} />} />
         </Route>
         <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
           <Route index element={<><Lz C={DashboardPage} /><Lz C={AdminExtras} /></>} />
@@ -75,6 +77,7 @@ export function AppRouter() {
           <Route path="inventory/levels" element={<Lz C={StockLevelsPage} />} />
           <Route path="inventory/storage" element={<Lz C={StorageUsagePage} />} />
           <Route path="orders" element={<Lz C={OrdersPage} />} />
+          <Route path="records/:kind/:id" element={<Lz C={RecordDetailPage} />} />
           <Route path="returns" element={<Lz C={ReturnsPage} />} />
           <Route path="finance/withdrawals" element={<Lz C={WithdrawalsPage} />} />
           <Route path="finance/wallets" element={<Lz C={WalletsPage} />} />
@@ -97,8 +100,6 @@ import MerchantLoginPage from '@/features/merchant/merchant-login-page'
 function MerchantLoginPageLazy() {
   return <MerchantLoginPage />
 }
-
-
 
 
 

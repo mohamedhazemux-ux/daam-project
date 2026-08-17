@@ -1,5 +1,4 @@
 ﻿import { useMemo, useState } from 'react'
-import { useT } from '@/lib/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -19,7 +18,6 @@ const KV = ({ k, v }: { k: string; v: React.ReactNode }) => <div className="roun
 const TABS: [string, string][] = [['overview', 'نظرة عامة'], ['tx', 'سجل المعاملات'], ['wd', 'طلبات السحب'], ['subs', 'الاشتراكات'], ['inv', 'الفواتير الشهرية']]
 export default function MerchantWalletPage() {
   const [tab, setTab] = useState('overview')
-  const t = useT()
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-2 shadow-sm">
@@ -39,8 +37,19 @@ function Overview({ go }: { go: (t: string) => void }) {
   const { data: w } = useQuery({ queryKey: ['m-wallet', user?.store], queryFn: () => merchantFinanceService.wallet(user!.store!), refetchInterval: 60_000 })
   const { data: accounts } = useQuery({ queryKey: ['m-bank', user?.store], queryFn: () => merchantFinanceService.bankAccounts(user!.store!) })
   const [wdOpen, setWdOpen] = useState(false)
-  const [form, setForm] = useState({ amount: 0, account: '', notes: '' })
+  const [form, setForm] = useState({ amount: 0, account: '', notes: '', attachments: [] as string[] })
   const [fErr, setFErr] = useState('')
+  const onFiles = (list: FileList | null) => {
+    if (!list) return
+    const arr = Array.from(list)
+    if (form.attachments.length + arr.length > 5) { setFErr('الحد الأقصى 5 مرفقات'); return }
+    for (const f of arr) {
+      if (!/\.(jpg|png|jpeg|pdf)$/i.test(f.name)) { setFErr('امتداد غير صالح، يرجى رفع ملف بصيغة JPG أو PNG أو JPEG أو PDF'); return }
+      if (f.size > 10 * 1024 * 1024) { setFErr('الحجم الأقصى للملف 10 ميجابايت، يرجى استخدام ملف آخر'); return }
+    }
+    setFErr('')
+    setForm(f => ({ ...f, attachments: [...f.attachments, ...arr.map(x => x.name)] }))
+  }
   const submit = useMutation({ mutationFn: () => merchantFinanceService.submitWithdrawal(user!.store!, user!.email, form), onSuccess: () => { toast.success('تم إرسال طلب السحب بنجاح'); qc.invalidateQueries({ queryKey: ['m-wallet'] }); qc.invalidateQueries({ queryKey: ['m-wd'] }); setWdOpen(false); go('wd') } })
   const doSubmit = () => {
     if (!form.amount) { setFErr('مبلغ السحب مطلوب'); return }
@@ -60,7 +69,7 @@ function Overview({ go }: { go: (t: string) => void }) {
           <div><p className="text-[11px] font-bold text-muted-foreground">الرصيد الحالي للمحفظة</p><p className="text-3xl font-black">{money(w.bal)}</p></div>
           <div className="ms-auto flex gap-2">
             <Button variant="outline" onClick={() => go('tx')}>عرض سجل المعاملات</Button>
-            <Button onClick={() => { setForm({ amount: 0, account: '', notes: '' }); setFErr(''); setWdOpen(true) }}>طلب سحب</Button>
+            <Button onClick={() => { setForm({ amount: 0, account: '', notes: '', attachments: [] }); setFErr(''); setWdOpen(true) }}>طلب سحب</Button>
           </div>
         </div>
       </div>
@@ -80,6 +89,8 @@ function Overview({ go }: { go: (t: string) => void }) {
                 {(accounts ?? []).map(a => <option key={a.id} value={a.label}>{a.label}</option>)}
               </select>)}</div>
           <div><Label>ملاحظات السحب (اختياري — 300 حرف)</Label><Textarea maxLength={300} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+          <div><Label>المرفقات (اختياري — JPG/PNG/JPEG/PDF حتى 10MB — حتى 5 ملفات)</Label><Input type="file" multiple accept=".jpg,.png,.jpeg,.pdf" onChange={e => onFiles(e.target.files)} />
+            {form.attachments.length > 0 && <p className="mt-1 text-[11px] font-bold text-muted-foreground">{form.attachments.map(x => '📎 ' + x).join('  ')}</p>}</div>
         </div>
         {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
       </Modal>
@@ -202,6 +213,8 @@ function WdTab() {
           <div className="mb-3 grid grid-cols-2 gap-3">
             <KV k="رقم الطلب" v={viewing.id} /><KV k="المبلغ" v={money(viewing.amount)} /><KV k="الطريقة" v={viewing.method} /><KV k="الحالة" v={viewing.status} /><KV k="تاريخ الطلب" v={viewing.date} />
           </div>
+          {viewing.notes && <div className="mb-3"><p className="mb-1 text-xs font-extrabold text-muted-foreground">ملاحظات السحب</p><p className="rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.notes}</p></div>}
+          {viewing.attachment && <div className="mb-3"><p className="mb-1 text-xs font-extrabold text-muted-foreground">المرفقات</p><p className="rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">📎 {viewing.attachment}</p></div>}
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">الحساب البنكي (كامل — يظهر للتاجر فقط)</p>
           <div className="mb-3 grid grid-cols-2 gap-3">
             <KV k="اسم البنك" v={acc?.bank ?? '—'} /><KV k="اسم صاحب الحساب" v={acc?.holder ?? '—'} /><KV k="رقم الحساب (مقنع)" v={acc?.masked ?? '—'} /><KV k="الآيبان" v={<span dir="ltr">{acc?.iban ?? '—'}</span>} />

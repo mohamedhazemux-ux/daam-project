@@ -54,13 +54,14 @@ export const merchantFinanceService = {
     if (!m?.bank) return []
     return [{ id: 'BA-1', label: (m.bank as string) + ' — ****' + (m.iban as string)?.slice(-4), bank: m.bank as string, holder: m.first + ' ' + m.last, iban: m.iban as string, masked: '****' + (m.iban as string)?.slice(-4) }]
   },
-  async submitWithdrawal(store: string, email: string, input: { amount: number; account: string; notes: string }) {
+  async submitWithdrawal(store: string, email: string, input: { amount: number; account: string; notes: string; attachments?: string[] }) {
     await delay(400)
     const w = db.wallets.find(x => x.m === store)
     if (!w) throw new Error('المحفظة غير موجودة')
     w.res += input.amount
     const id = 'WD-' + ++wdSeq
-    db.withdrawals.unshift({ id, m: store, email, amount: input.amount, method: 'تحويل بنكي', bank: input.account, date: todayISO(), status: 'معلق' } as (typeof db.withdrawals)[0])
+    const attachment = input.attachments?.length ? input.attachments.join(', ') : undefined
+    db.withdrawals.unshift({ id, m: store, email, amount: input.amount, method: 'تحويل بنكي', bank: input.account, date: todayISO(), status: 'معلق', notes: input.notes, attachment } as (typeof db.withdrawals)[0])
     db.approvals.unshift({ id: 'APR-' + (500 + db.approvals.length + 1), type: 'طلب سحب مالي', who: store, title: 'طلب سحب ' + input.amount + ' ريال (' + id + ')', urgency: 'عادي', date: todayISO(), days: 0 })
     audit('طلب سحب مالي ' + id + ' بمبلغ ' + input.amount + ' — تم حجز المبلغ من الرصيد المتاح', 'مالية التاجر', 'إنشاء')
     return id

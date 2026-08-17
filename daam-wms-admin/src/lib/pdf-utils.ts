@@ -177,3 +177,81 @@ export function printPackingSlipPDF(data: PackingSlipPrintData) {
   printWindow.document.write(html)
   printWindow.document.close()
 }
+
+export interface ShippingLabelPrintData {
+  orderNumber: string
+  customerName: string
+  shippingAddress: string
+  merchantName: string
+  trackingNumber: string
+  date: string
+}
+
+export function printShippingLabelPDF(data: ShippingLabelPrintData) {
+  const printWindow = window.open('', '_blank')
+  if (!printWindow) return
+
+  const html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+      <meta charset="utf-8">
+      <title>بوليصة شحن — ${data.orderNumber}</title>
+      <style>
+        body { font-family: 'Cairo', sans-serif, system-ui; padding: 20px; color: #111; display: flex; justify-content: center; }
+        .label-container { width: 380px; border: 3px solid #000; padding: 15px; box-sizing: border-box; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+        .logo { font-size: 16px; font-weight: 900; }
+        .carrier { font-size: 18px; font-weight: 900; border: 2px solid #000; padding: 2px 8px; text-transform: uppercase; }
+        .section { border-bottom: 1px solid #000; padding: 8px 0; font-size: 12px; }
+        .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #666; margin-bottom: 4px; }
+        .barcode-container { display: flex; flex-direction: column; align-items: center; padding: 15px 0; border-bottom: 1px solid #000; }
+        .barcode { height: 50px; width: 80%; background: repeating-linear-gradient(90deg, #000, #000 2px, #fff 2px, #fff 6px); }
+        .tracking-num { font-size: 14px; font-weight: 900; margin-top: 5px; letter-spacing: 2px; }
+        .meta-grid { display: grid; grid-template-cols: 1fr 1fr; gap: 10px; padding-top: 8px; font-size: 11px; }
+      </style>
+    </head>
+    <body>
+      <div class="label-container">
+        <div class="header">
+          <div class="logo">المنصة الداعمة WMS</div>
+          <div class="carrier">أرامكس / Aramex</div>
+        </div>
+        
+        <div class="barcode-container">
+          <div class="barcode"></div>
+          <div class="tracking-num">${data.trackingNumber}</div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">المرسل (Sender):</div>
+          <p style="margin: 0; font-weight: bold;">${data.merchantName}</p>
+          <p style="margin: 3px 0 0 0; font-size: 11px;">مستودع المنصة الرئيسي — الرياض، المملكة العربية السعودية</p>
+        </div>
+
+        <div class="section">
+          <div class="section-title">المرسل إليه (Receiver):</div>
+          <p style="margin: 0; font-weight: bold;">${data.customerName}</p>
+          <p style="margin: 3px 0 0 0; font-size: 11px;">${data.shippingAddress}</p>
+        </div>
+
+        <div class="meta-grid">
+          <div>رقم الطلب: <b>${data.orderNumber}</b></div>
+          <div style="text-align: left;">التاريخ: <b>${data.date}</b></div>
+          <div>الوزن: <b>1.5 كجم</b></div>
+          <div style="text-align: left;">الخدمة: <b>شحن محلي سريع</b></div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          window.print();
+        }
+      </script>
+    </body>
+    </html>
+  `
+  printWindow.document.write(html)
+  printWindow.document.close()
+}
+

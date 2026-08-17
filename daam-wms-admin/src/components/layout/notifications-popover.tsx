@@ -1,13 +1,16 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { systemService } from '@/services/system.service'
 import { merchantNotificationsService } from '@/services/merchant-notifications.service'
 import { Bell } from 'lucide-react'
+import { getNotificationRoute } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 type NotificationPreview = { id: string; title: string; msg: string; unread: boolean }
 export function NotificationsPopover() {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -32,7 +35,7 @@ export function NotificationsPopover() {
   }
   return (
     <div className="relative">
-      <button onClick={() => setOpen(o => !o)} className="relative inline-flex size-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent" aria-label="الإشعارات">
+      <button onClick={() => setOpen(o => !o)} className="relative inline-flex size-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent" aria-label={t('الإشعارات')}>
         <Bell className="size-4" />
         {unread > 0 && <span className="absolute -top-1 -start-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[9px] font-black text-white">{unread}</span>}
       </button>
@@ -42,10 +45,14 @@ export function NotificationsPopover() {
           <div className="absolute end-0 z-50 mt-2 w-80 rounded-xl border bg-card shadow-lg">
             <div className="max-h-80 overflow-y-auto p-2">
               {rows.length === 0 ? (
-                <p className="p-4 text-center text-xs font-bold text-muted-foreground">لا توجد إشعارات</p>
+                <p className="p-4 text-center text-xs font-bold text-muted-foreground">{t('لا توجد إشعارات')}</p>
               ) : (
                 rows.slice(0, 10).map(n => (
-                  <button key={n.id} onClick={() => markRead(n.id)} className="mb-1 w-full rounded-lg border p-2 text-start hover:bg-accent">
+                  <button key={n.id} onClick={() => {
+                    markRead(n.id)
+                    setOpen(false)
+                    navigate(getNotificationRoute(n, isMerchant))
+                  }} className="mb-1 w-full rounded-lg border p-2 text-start hover:bg-accent">
                     <p className="text-[12px] font-extrabold">{n.title}</p>
                     <p className="truncate text-[11px] font-semibold text-muted-foreground">{n.msg}</p>
                   </button>
@@ -53,7 +60,7 @@ export function NotificationsPopover() {
               )}
             </div>
             <div className="border-t p-2">
-              <Button variant="outline" size="sm" className="w-full" onClick={() => { setOpen(false); navigate(allPath) }}>عرض كل الإشعارات</Button>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => { setOpen(false); navigate(allPath) }}>{t('عرض جميع الإشعارات')}</Button>
             </div>
           </div>
         </>

@@ -52,7 +52,8 @@ export const productsService = {
     await delay(300)
     const index = DELETED.findIndex(product => product.ref === ref)
     if (index < 0) throw new Error('Product not found')
-    const { deletedAt: _deletedAt, ...product } = DELETED[index]
+    const product = { ...DELETED[index] }
+    delete (product as { deletedAt?: string }).deletedAt
     db.pltProducts.unshift(product)
     DELETED.splice(index, 1)
     return product
