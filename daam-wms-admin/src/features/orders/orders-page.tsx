@@ -5,19 +5,18 @@ import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { DataTable } from '@/components/tables/data-table'
-import { Modal, StatusBadge, selectCls } from '@/components/common'
+import { StatusBadge, selectCls } from '@/components/common'
 import { ordersService } from '@/services/orders.service'
 import { merchantService } from '@/services/merchant.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, downloadCSV, money } from '@/lib/utils'
 import { printPackingSlipPDF, printShippingLabelPDF } from '@/lib/pdf-utils'
 import type { Order } from '@/types'
-import { Download, Eye, Printer, Search, Truck } from 'lucide-react'
+import { Eye, Printer, Search, Truck } from 'lucide-react'
+
 
 const STATUSES = ['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي']
-const PICKERS = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن']
 
 export default function OrdersPage() {
   const navigate = useNavigate()
@@ -32,18 +31,11 @@ export default function OrdersPage() {
   const { data, isLoading } = useQuery({ queryKey: ['orders', qp], queryFn: () => ordersService.list(qp) })
   const { data: merchants } = useQuery({ queryKey: ['merchants-all'], queryFn: () => merchantService.list({ pageSize: 100 }) })
 
-  const [viewing, setViewing] = useState<Order | null>(null)
-  const [newStatus, setNewStatus] = useState<Order['status']>('معلق')
-  const [picker, setPicker] = useState('')
   const invalidate = () => qc.invalidateQueries({ queryKey: ['orders'] })
 
   const setStatusMut = useMutation({
     mutationFn: (v: { ids: string[]; status: Order['status'] }) => ordersService.setStatus(v.ids, v.status),
     onSuccess: () => { toast.success('تم التحقق بنجاح: تم تحديث حالة الطلب بنجاح'); invalidate() },
-  })
-  const assignMut = useMutation({
-    mutationFn: (v: { id: string; picker: string }) => ordersService.assignPicker(v.id, v.picker),
-    onSuccess: () => { toast.success('تم إسناد الطلب إلى المنتقي بنجاح'); invalidate() },
   })
 
   const printSlip = (order: Order) => {
@@ -62,7 +54,7 @@ export default function OrdersPage() {
     toast.success('تم تجهيز قائمة التجميع والطباعة (PDF)')
   }
   const printLabel = (id: string) => {
-    const o = (data?.rows ?? []).find(x => x.id === id) || (viewing?.id === id ? viewing : null)
+    const o = (data?.rows ?? []).find(x => x.id === id)
     if (!o) {
       toast.error('الطلب غير موجود')
       return
@@ -142,60 +134,6 @@ export default function OrdersPage() {
           </div>
         }
       />
-
-      <Modal
-        open={!!viewing}
-        onClose={() => setViewing(null)}
-        wide
-        title={'تفاصيل الطلب — ' + (viewing?.id ?? '')}
-        footer={<>
-          <Button variant="outline" onClick={() => viewing && printSlip(viewing)}><Printer className="size-4" /> قائمة التعبئة</Button>
-          {viewing?.ship === 'منصة'
-            ? <Button variant="outline" onClick={() => viewing && printLabel(viewing.id)}><Truck className="size-4" /> بوليصة الشحن</Button>
-            : <Button variant="outline" onClick={() => toast.success('تم تنزيل بوليصة التاجر (PDF)')}><Download className="size-4" /> تحميل بوليصة التاجر</Button>}
-          <Button disabled={setStatusMut.isPending} onClick={() => viewing && setStatusMut.mutate({ ids: [viewing.id], status: newStatus }, { onSettled: () => setViewing(null) })}>حفظ التغييرات</Button>
-        </>}
-      >
-        {viewing && <>
-          {viewing.ship === 'ذاتي' && (
-            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-              هذا الطلب ذاتي الشحن بواسطة التاجر — بوليصة شحن المنصة غير قابلة للتطبيق، والإدارة تتم بواسطة التاجر (CR-006).
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {[['التاجر', viewing.m], ['العميل', viewing.cust], ['التاريخ', arDate(viewing.date)],
-              ['مسؤولية الشحن', <StatusBadge key="s" value={viewing.ship} />],
-              ['الإجمالي', money(viewing.total) + (viewing.ship === 'ذاتي' ? ' (بدون شحن)' : '')],
-              ['رقم التتبع', viewing.ship === 'ذاتي' ? 'TRK-88' + viewing.id.slice(-4) + ' (بواسطة التاجر)' : 'بانتظار الإنشاء']].map(([k, v]) => (
-              <div key={k as string} className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>
-            ))}
-          </div>
-          <h4 className="mb-2 mt-4 text-sm font-extrabold">منتجات الطلب</h4>
-          <div className="overflow-hidden rounded-lg border">
-            <table className="w-full text-sm">
-              <thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">المنتج</th><th className="p-2 text-start font-extrabold">الكمية</th><th className="p-2 text-start font-extrabold">السعر</th></tr></thead>
-              <tbody>
-                <tr className="border-b"><td className="p-2">قهوة عربية مختصة 1كجم</td><td className="p-2">2</td><td className="p-2">{money(180)}</td></tr>
-                <tr><td className="p-2">بن محمص كولومبي 500جم</td><td className="p-2">1</td><td className="p-2">{money(Math.max(0, viewing.total - 180))}</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div><Label>تحديث حالة الطلب</Label>
-              <select className={selectCls + ' w-full'} value={newStatus} onChange={e => setNewStatus(e.target.value as Order['status'])}>
-                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select></div>
-            <div><Label>إسناد الطلب إلى منتقي</Label>
-              <div className="flex gap-2">
-                <select className={selectCls + ' w-full'} value={picker} onChange={e => setPicker(e.target.value)}>
-                  <option value="">اختر المنتقي...</option>
-                  {PICKERS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-                <Button variant="outline" disabled={!picker} onClick={() => viewing && assignMut.mutate({ id: viewing.id, picker })}>إسناد</Button>
-              </div></div>
-          </div>
-        </>}
-      </Modal>
     </div>
   )
 }

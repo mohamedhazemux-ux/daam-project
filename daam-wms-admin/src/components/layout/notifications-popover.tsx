@@ -7,6 +7,7 @@ import { merchantNotificationsService } from '@/services/merchant-notifications.
 import { Bell } from 'lucide-react'
 import { getNotificationRoute } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { useAuthStore } from '@/store/auth-store'
 
 type NotificationPreview = { id: string; title: string; msg: string; unread: boolean }
 export function NotificationsPopover() {
@@ -16,10 +17,11 @@ export function NotificationsPopover() {
   const location = useLocation()
   const qc = useQueryClient()
   const isMerchant = location.pathname.startsWith('/merchant')
+  const store = useAuthStore(s => s.user?.store)
   const { data } = useQuery<{ rows: NotificationPreview[]; total: number }>({
-    queryKey: isMerchant ? ['m-notif-pop'] : ['notif-pop'],
+    queryKey: isMerchant ? ['m-notif-pop', store] : ['notif-pop'],
     queryFn: async () => isMerchant
-      ? merchantNotificationsService.list({ page: 1, pageSize: 100 })
+      ? merchantNotificationsService.list({ page: 1, pageSize: 100, store })
       : systemService.notifications({ page: 1, pageSize: 100 }),
     refetchInterval: 60_000,
   })

@@ -137,7 +137,7 @@ export function ServiceRequestsPage() {
                 ['التكلفة التقديرية', money(viewing.cost)],
                 ['الإلحاح', viewing.urgency],
                 ['التاريخ المفضل', arDate(viewing.date)],
-                ['المتطلبات', viewing.req],
+                ['تاريخ الطلب', arDate(viewing.req)],
                 ['الحالة', viewing.status],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2">

@@ -33,7 +33,6 @@ export function StockRequestsPage() {
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [rErr, setRErr] = useState('')
-  const [viewing, setViewing] = useState<StockRequest | null>(null)
 
   const approve = useMutation({ mutationFn: (id: string) => inventoryService.approveRequest(id), onSuccess: () => { toast.success('تمت الموافقة على طلب المخزون بنجاح'); invalidate(); setApproving(null) } })
   const reject = useMutation({ mutationFn: (v: { id: string; reason: string }) => inventoryService.rejectRequest(v.id, v.reason), onSuccess: () => { toast.success('تم رفض طلب المخزون بنجاح'); invalidate(); setRejecting(null) } })
@@ -90,58 +89,6 @@ export function StockRequestsPage() {
         <Label>سبب الرفض <span className="text-destructive">*</span> (10 – 500 حرف)</Label>
         <Textarea value={reason} maxLength={500} onChange={e => setReason(e.target.value)} placeholder="اشرح سبب رفض الطلب..." />
         {rErr && <p className="mt-1 text-xs font-bold text-destructive">{rErr}</p>}
-      </Modal>
-
-      <Modal open={!!viewing} onClose={() => setViewing(null)} title={'تفاصيل طلب المخزون — ' + (viewing?.id ?? '')}
-        footer={<>
-          <Button variant="outline" onClick={() => setViewing(null)}>إغلاق</Button>
-          {viewing?.status === 'معلق' && (
-            <>
-              <Button onClick={() => { setViewing(null); setApproving(viewing.id); }}>اعتماد</Button>
-              <Button variant="destructive" onClick={() => { setViewing(null); setRejecting(viewing.id); setReason(''); setRErr(''); }}>رفض</Button>
-            </>
-          )}
-        </>}>
-        {viewing && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                ['رقم الطلب', viewing.id],
-                ['التاجر', viewing.m],
-                ['المنتج', viewing.p],
-                ['المستودع', viewing.wh],
-                ['الكمية', String(viewing.qty)],
-                ['النوع', viewing.type],
-                ['التاريخ', arDate(viewing.date)],
-                ['الحالة', viewing.status],
-              ].map(([k, v]) => (
-                <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2">
-                  <p className="text-[11px] font-bold text-muted-foreground">{k}</p>
-                  <p className="text-[13px] font-extrabold">{v}</p>
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-muted-foreground">الملاحظات</p>
-              <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm font-semibold">
-                {viewing.notes || 'لا توجد ملاحظات مرفقة'}
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
-              <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
-                {viewing.attachment ? (
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
-                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>تحميل المرفق</Button>
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground">لا توجد مرفقات</span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </Modal>
     </div>
   )

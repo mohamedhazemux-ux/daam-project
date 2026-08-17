@@ -35,7 +35,6 @@ export default function ReturnsPage() {
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [rErr, setRErr] = useState('')
-  const [viewing, setViewing] = useState<ReturnRequest | null>(null)
   const [receiving, setReceiving] = useState<ReturnRequest | null>(null)
   const [inspecting, setInspecting] = useState<ReturnRequest | null>(null)
   const [conds, setConds] = useState<{ condition: string; notes: string }[]>([])
@@ -191,52 +190,6 @@ export default function ReturnsPage() {
           </div>
           {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
         </>}
-      </Modal>
-
-      <Modal open={!!viewing} onClose={() => setViewing(null)} title={'تفاصيل طلب الإرجاع — ' + (viewing?.ref ?? '')}
-        footer={<>
-          <Button variant="outline" onClick={() => setViewing(null)}>إغلاق</Button>
-        </>}>
-        {viewing && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                ['مرجع الإرجاع', viewing.ref],
-                ['التاجر', viewing.m],
-                ['الطلب الأصلي', viewing.order],
-                ['العميل', viewing.cust],
-                ['القطع', String(viewing.count)],
-                ['النوع', viewing.type],
-                ['التاريخ', arDate(viewing.date)],
-                ['الحالة', viewing.status],
-              ].map(([k, v]) => (
-                <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2">
-                  <p className="text-[11px] font-bold text-muted-foreground">{k}</p>
-                  <p className="text-[13px] font-extrabold">{v}</p>
-                </div>
-              ))}
-            </div>
-            {viewing.notes && (
-              <div>
-                <p className="text-[11px] font-bold text-muted-foreground">الملاحظات</p>
-                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm font-semibold">
-                  {viewing.notes}
-                </div>
-              </div>
-            )}
-            {viewing.attachment && (
-              <div>
-                <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
-                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
-                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>تحميل المرفق</Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </Modal>
     </div>
   )
