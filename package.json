@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "build": "cd daam-wms-admin && npm install && npm run build",
+    "start": "cd daam-wms-admin && npm run preview -- --host 0.0.0.0"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
     "@radix-ui/react-alert-dialog": "^1.1.23",
