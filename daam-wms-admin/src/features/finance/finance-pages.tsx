@@ -17,6 +17,28 @@ import { Search } from 'lucide-react'
 import { printInvoicePDF } from '@/lib/pdf-utils'
 import { useT } from '@/lib/i18n'
 
+function generateInvoicePdf(invoice: Invoice) {
+  const subtotal = invoice.total / 1.15
+  const items = [
+    { description: 'رسوم تنفيذ الطلبات', quantity: 24, total: invoice.total * 0.5 },
+    { description: 'رسوم الخدمات المساندة', quantity: 3, total: invoice.total * 0.3 },
+    { description: 'تكاليف شحن المنصة', quantity: 12, total: invoice.total * 0.14 },
+  ]
+  return printInvoicePDF({
+    reference: invoice.ref,
+    period: invoice.period,
+    merchantName: invoice.m,
+    merchantEmail: invoice.email,
+    items: items.map(item => ({ ...item, unitPrice: item.total / item.quantity })),
+    subtotal,
+    tax: invoice.total - subtotal,
+    total: invoice.total,
+    dueDate: arDate(invoice.due),
+    createdAt: arDate(invoice.gen),
+    status: invoice.status,
+  })
+}
+
 /* ---------- طلبات السحب المعلقة ---------- */
 export function WithdrawalsPage() {
   const navigate = useNavigate()
@@ -331,7 +353,11 @@ export function InvoicesPage() {
     { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
       <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => navigate(`/records/invoice/${row.original.ref}`)}>عرض</Button>
+        <Button size="sm" variant="outline" onClick={() => setViewing(row.original)}>عرض</Button>
+        <Button size="sm" variant="outline" onClick={() => {
+          if (generateInvoicePdf(row.original)) toast.success('تم فتح الفاتورة للطباعة أو الحفظ بصيغة PDF')
+          else toast.error('تعذر فتح الفاتورة. يرجى السماح بالنوافذ المنبثقة ثم المحاولة.')
+        }}>تنزيل PDF</Button>
         <Button size="sm" variant="outline" onClick={() => setResending(row.original.ref)}>إعادة إرسال</Button>
         {row.original.status !== 'مدفوعة' && <Button size="sm" variant="outline" onClick={() => markPaid.mutate(row.original.ref)}>تحديد كمدفوعة</Button>}
       </div>) },
@@ -357,26 +383,9 @@ export function InvoicesPage() {
 
       <Modal open={!!viewing} onClose={() => setViewing(null)} wide title={'تفاصيل الفاتورة — ' + (viewing?.ref ?? '')}
         footer={<Button variant="outline" onClick={() => {
-          if (viewing) {
-            printInvoicePDF({
-              reference: viewing.ref,
-              period: viewing.period,
-              merchantName: viewing.m,
-              merchantEmail: viewing.email,
-              items: [
-                { description: 'رسوم تنفيذ الطلبات', quantity: 24, unitPrice: (viewing.total * 0.5) / 24, total: viewing.total * 0.5 },
-                { description: 'رسوم الخدمات المساندة', quantity: 3, unitPrice: (viewing.total * 0.3) / 3, total: viewing.total * 0.3 },
-                { description: 'تكاليف شحن المنصة', quantity: 12, unitPrice: (viewing.total * 0.14) / 12, total: viewing.total * 0.14 },
-              ],
-              subtotal: viewing.total / 1.15,
-              tax: viewing.total - (viewing.total / 1.15),
-              total: viewing.total,
-              dueDate: arDate(viewing.due),
-              createdAt: arDate(viewing.gen),
-              status: viewing.status,
-            })
-            toast.success('جارٍ تجهيز وحفظ الفاتورة بصيغة PDF')
-          }
+          if (!viewing) return
+          if (generateInvoicePdf(viewing)) toast.success('تم فتح الفاتورة للطباعة أو الحفظ بصيغة PDF')
+          else toast.error('تعذر فتح الفاتورة. يرجى السماح بالنوافذ المنبثقة ثم المحاولة.')
         }}>طباعة / تنزيل PDF</Button>}>
         {viewing && <>
           <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">

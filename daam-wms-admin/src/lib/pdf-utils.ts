@@ -23,9 +23,9 @@ export interface PackingSlipPrintData {
   date: string
 }
 
-export function printInvoicePDF(data: InvoicePrintData) {
+export function printInvoicePDF(data: InvoicePrintData): boolean {
   const printWindow = window.open('', '_blank')
-  if (!printWindow) return
+  if (!printWindow) return false
 
   const html = `
     <!DOCTYPE html>
@@ -113,11 +113,12 @@ export function printInvoicePDF(data: InvoicePrintData) {
   `
   printWindow.document.write(html)
   printWindow.document.close()
+  return true
 }
 
-export function printPackingSlipPDF(data: PackingSlipPrintData) {
+export function printPackingSlipPDF(data: PackingSlipPrintData): boolean {
   const printWindow = window.open('', '_blank')
-  if (!printWindow) return
+  if (!printWindow) return false
 
   const html = `
     <!DOCTYPE html>
@@ -176,6 +177,7 @@ export function printPackingSlipPDF(data: PackingSlipPrintData) {
   `
   printWindow.document.write(html)
   printWindow.document.close()
+  return true
 }
 
 export interface ShippingLabelPrintData {
@@ -187,9 +189,9 @@ export interface ShippingLabelPrintData {
   date: string
 }
 
-export function printShippingLabelPDF(data: ShippingLabelPrintData) {
+export function printShippingLabelPDF(data: ShippingLabelPrintData): boolean {
   const printWindow = window.open('', '_blank')
-  if (!printWindow) return
+  if (!printWindow) return false
 
   const html = `
     <!DOCTYPE html>
@@ -253,5 +255,5 @@ export function printShippingLabelPDF(data: ShippingLabelPrintData) {
   `
   printWindow.document.write(html)
   printWindow.document.close()
+  return true
 }
-

@@ -300,7 +300,7 @@ function InvTab() {
   const open = async (ref: string) => { const d = await merchantFinanceService.invoiceDetails(ref); setViewing(d) }
   const generateInvoicePdf = (invoice: any) => {
     if (!invoice) return
-    printInvoicePDF({
+    const opened = printInvoicePDF({
       reference: invoice.ref,
       period: invoice.period,
       merchantName: invoice.m || user?.store || 'التاجر',
@@ -318,7 +318,8 @@ function InvTab() {
       createdAt: invoice.gen || invoice.createdAt || '',
       status: invoice.status || 'مكتمل',
     })
-    toast.success('تم تجهيز الفاتورة بصيغة PDF')
+    if (opened) toast.success('تم فتح الفاتورة للطباعة أو الحفظ بصيغة PDF')
+    else toast.error('تعذر فتح الفاتورة. يرجى السماح بالنوافذ المنبثقة ثم المحاولة.')
   }
   const columns = [
     { accessorKey: 'ref', header: 'مرجع الفاتورة', cell: ({ row }: any) => <b dir="ltr">{row.original.ref}</b> },
@@ -357,8 +358,8 @@ function InvTab() {
         } />
       <Modal open={!!viewing} onClose={() => setViewing(null)} wide title={'تفاصيل الفاتورة — ' + (viewing?.ref ?? '')}
         footer={<>
-          <Button variant="outline" onClick={() => toast.success('تم تنزيل الفاتورة بصيغة PDF')}><FileDown className="size-4" /> تنزيل PDF</Button>
-          <Button variant="outline" onClick={() => toast.success('تم إرسال الفاتورة إلى الطابعة')}><Printer className="size-4" /> طباعة</Button>
+          <Button variant="outline" onClick={() => viewing && generateInvoicePdf(viewing)}><FileDown className="size-4" /> تنزيل PDF</Button>
+          <Button variant="outline" onClick={() => viewing && generateInvoicePdf(viewing)}><Printer className="size-4" /> طباعة</Button>
         </>}>
         {viewing && <>
           <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -379,4 +380,3 @@ function InvTab() {
     </div>
   )
 }
-
