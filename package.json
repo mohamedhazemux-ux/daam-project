@@ -1,4 +1,9 @@
 {
+  "name": "daam-project",
+  "private": true,
+  "workspaces": [
+    "daam-wms-admin"
+  ],
   "scripts": {
     "dev": "npm --prefix daam-wms-admin run dev",
     "build": "npm --prefix daam-wms-admin run build",
