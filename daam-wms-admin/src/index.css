@@ -1,9 +1,12 @@
-﻿@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 @layer base {
   :root {
+    --font-cairo: 'Cairo', system-ui, -apple-system, sans-serif;
     --background: 240 6% 96%;
     --foreground: 0 0% 4%;
     --card: 0 0% 100%;
@@ -29,8 +32,24 @@
     --info: 226 76% 48%;
     --violet: 262 60% 45%;
   }
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground font-sans antialiased; }
+  * {
+    border-color: hsl(var(--border));
+  }
+  html[lang="ar"], html[dir="rtl"], html:not([lang="en"]):not([dir="ltr"]) {
+    font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  html[lang="en"], html[dir="ltr"] {
+    font-family: 'Inter', 'Cairo', system-ui, -apple-system, sans-serif;
+  }
+  body, button, input, select, textarea {
+    font-family: inherit;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 /* ===== ضبط موحد للمسافات والحواف (يطغى على افتراضات المكونات) ===== */

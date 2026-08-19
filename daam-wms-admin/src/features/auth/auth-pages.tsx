@@ -35,33 +35,26 @@ function Field({ label, type, value, onChange, ph, hint }: { label: string; type
     <div>
       <Label className="text-[13px] font-extrabold">{label}</Label>
       <div className="relative mt-1.5">
+        <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+          {isPwd || type === 'text' ? <Lock className="size-4" /> : <Mail className="size-4" />}
+        </span>
         <Input
           type={isPwd ? (show ? 'text' : 'password') : type ?? 'email'}
-          dir={type === 'password' || type === 'email' ? 'ltr' : undefined}
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={ph}
-          className={`bg-muted/40 ${isPwd ? 'ps-10 pe-10' : 'pe-10'}`}
+          className={`bg-muted/40 text-start ${isPwd ? 'ps-10 pe-10' : 'ps-10 pe-3'}`}
         />
-        {isPwd ? (
-          <>
-            <span className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-              <Lock className="size-4" />
-            </span>
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={() => setShow(s => !s)}
-              className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={show ? t('إخفاء كلمة المرور') : t('إظهار كلمة المرور')}
-            >
-              {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
-          </>
-        ) : (
-          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-            {type === 'text' ? <Lock className="size-4" /> : <Mail className="size-4" />}
-          </span>
+        {isPwd && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShow(s => !s)}
+            className="absolute end-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={show ? t('إخفاء كلمة المرور') : t('إظهار كلمة المرور')}
+          >
+            {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
         )}
       </div>
       {hint && <p className="mt-1 text-[11px] font-semibold text-muted-foreground">{hint}</p>}

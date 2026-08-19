@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -6,15 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DataTable } from '@/components/tables/data-table'
-import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, ConfirmDialog, FileUploadWithPreview, Modal, StatusBadge, selectCls } from '@/components/common'
 import { merchantOrdersService, SHIP_METHODS, type MerchantOrder, type OrderItem } from '@/services/merchant-orders.service'
 import { merchantSettingsService } from '@/services/merchant-settings.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { downloadCSV, money } from '@/lib/utils'
 import { printShippingLabelPDF } from '@/lib/pdf-utils'
-import { Download, Plus, Search, Trash2 } from 'lucide-react'
+import { useT } from '@/lib/i18n'
+import { Download, Eye, Plus, Search, Trash2, XCircle } from 'lucide-react'
 export default function MerchantOrdersPage() {
+  const t = useT()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
   const [q, setQ] = useState('')
@@ -27,12 +31,16 @@ export default function MerchantOrdersPage() {
   const { data: opts } = useQuery({ queryKey: ['m-order-opts', user?.store], queryFn: () => merchantOrdersService.options(user!.store!) })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['m-orders'] })
   const [createOpen, setCreateOpen] = useState(false)
-  const [form, setForm] = useState({ cust: '', address: '', shipResp: merchantSettingsService.loadSync(user?.store ?? '').defaultShip as '' | 'منصة' | 'ذاتي', method: '', tracking: '', label: '' })
+  const [carrierModalOpen, setCarrierModalOpen] = useState(false)
+  const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<MerchantOrder | null>(null)
+  const [selectedCarrier, setSelectedCarrier] = useState('أرامكس (Aramex)')
+  const [form, setForm] = useState({ cust: '', address: '', shipResp: merchantSettingsService.loadSync(user?.store ?? '').defaultShip as '' | 'منصة' | 'ذاتي', method: '', carrier: 'أرامكس (Aramex)', tracking: '', label: '' })
   const [items, setItems] = useState<OrderItem[]>([{ name: '', qty: 1, price: 0, notes: '' }])
   const [fErr, setFErr] = useState('')
   const [viewing, setViewing] = useState<MerchantOrder | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
-  const generateShippingLabel = (order: MerchantOrder) => {
+
+  const generateShippingLabel = (order: MerchantOrder, carrier = 'أرامكس (Aramex)') => {
     printShippingLabelPDF({
       orderNumber: order.ref,
       customerName: order.cust,
@@ -40,8 +48,10 @@ export default function MerchantOrdersPage() {
       merchantName: order.m,
       trackingNumber: order.tracking || 'TRK-' + order.ref.replace(/\D/g, '').slice(-6),
       date: order.date,
+      carrier,
     })
-    toast.success('تم تجهيز بوليصة الشحن بصيغة PDF')
+    toast.success(`تم تجهيز بوليصة الشحن عبر (${carrier}) بصيغة PDF`)
+    setCarrierModalOpen(false)
   }
   const create = useMutation({ mutationFn: () => merchantOrdersService.create(user!.store!, { ...form, shipResp: form.shipResp as 'منصة' | 'ذاتي', items }), onSuccess: () => { toast.success('تم إنشاء الطلب بنجاح'); invalidate(); setCreateOpen(false) } })
   const cancel = useMutation({ mutationFn: (ref: string) => merchantOrdersService.cancel(ref), onSuccess: () => { toast.success('تم إلغاء الطلب بنجاح'); invalidate(); setCancelling(null); setViewing(null) }, onError: e => toast.error((e as Error).message) })
@@ -82,19 +92,19 @@ export default function MerchantOrdersPage() {
     create.mutate()
   }
   const columns: ColumnDef<MerchantOrder, unknown>[] = [
-    { accessorKey: 'ref', header: 'رقم الطلب', cell: ({ row }) => <b>{row.original.ref}</b> },
-    { accessorKey: 'cust', header: 'العميل' },
-    { accessorKey: 'date', header: 'تاريخ الطلب' },
-    { id: 'items', header: 'المنتجات', cell: ({ row }) => row.original.items.map(i => i.name).join('، ').slice(0, 40) + '…' },
-    { id: 'qty', header: 'الكمية الإجمالية', cell: ({ row }) => row.original.items.reduce((s, i) => s + i.qty, 0) },
-    { id: 'total', header: 'السعر الإجمالي', cell: ({ row }) => <b>{money(row.original.total)}</b> },
-    { id: 'ship', header: 'مسؤولية الشحن', cell: ({ row }) => <StatusBadge value={row.original.shipResp} /> },
-    { id: 'status', header: 'حالة الطلب', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => setViewing(row.original)}>عرض التفاصيل</Button>
-        {row.original.status === 'معلق' && <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setCancelling(row.original.ref)}>إلغاء الطلب</Button>}
-      </div>) },
+    { accessorKey: 'ref', header: t('رقم الطلب'), cell: ({ row }) => <b>{row.original.ref}</b> },
+    { accessorKey: 'cust', header: t('العميل') },
+    { accessorKey: 'date', header: t('تاريخ الطلب') },
+    { id: 'items', header: t('المنتجات'), cell: ({ row }) => row.original.items.map(i => i.name).join('، ').slice(0, 40) + '…' },
+    { id: 'qty', header: t('الكمية الإجمالية'), cell: ({ row }) => row.original.items.reduce((s, i) => s + i.qty, 0) },
+    { id: 'total', header: t('السعر الإجمالي'), cell: ({ row }) => <b>{money(row.original.total)}</b> },
+    { id: 'ship', header: t('مسؤولية الشحن'), cell: ({ row }) => <StatusBadge value={row.original.shipResp} /> },
+    { id: 'status', header: t('حالة الطلب'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض تفاصيل الطلب', onClick: () => navigate('/merchant/records/order/' + row.original.ref) },
+        { icon: XCircle, label: 'إلغاء الطلب', variant: 'destructive', onClick: () => setCancelling(row.original.ref), hidden: row.original.status !== 'معلق' },
+      ]} />) },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -103,46 +113,61 @@ export default function MerchantOrdersPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[200px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث برقم الطلب أو العميل أو المنتج..." className="pe-9" aria-label="بحث في الطلبات" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث برقم الطلب أو العميل أو المنتج...')} className="pe-9" aria-label={t('بحث في الطلبات')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي'].map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <select className={selectCls} value={ship} onChange={e => { setShip(e.target.value); setPage(1) }} aria-label="تصفية حسب مسؤولية الشحن">
-              <option value="">مسؤولية الشحن: الكل</option>
-              <option value="منصة">شحن المنصة</option>
-              <option value="ذاتي">الشحن الذاتي</option>
+            <select className={selectCls} value={ship} onChange={e => { setShip(e.target.value); setPage(1) }} aria-label={t('تصفية حسب مسؤولية الشحن')}>
+              <option value="">{t('مسؤولية الشحن: الكل')}</option>
+              <option value="منصة">{t('شحن المنصة')}</option>
+              <option value="ذاتي">{t('الشحن الذاتي')}</option>
             </select>
             <div className="ms-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => { downloadCSV('my-orders', ['الرقم', 'العميل', 'التاريخ', 'الحالة', 'الشحن', 'الإجمالي'], (data?.rows ?? []).map(o => [o.ref, o.cust, o.date, o.status, o.shipResp, o.total])); toast.success('تم تصدير قائمة الطلبات بنجاح') }}>تصدير</Button>
-              <Button size="sm" onClick={() => { setForm({ cust: '', address: '', shipResp: '', method: '', tracking: '', label: '' }); setItems([{ name: '', qty: 1, price: 0, notes: '' }]); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> إنشاء طلب</Button>
+              <Button variant="outline" size="sm" onClick={() => { downloadCSV('my-orders', ['الرقم', 'العميل', 'التاريخ', 'الحالة', 'الشحن', 'الإجمالي'], (data?.rows ?? []).map(o => [o.ref, o.cust, o.date, o.status, o.shipResp, o.total])); toast.success('تم تصدير قائمة الطلبات بنجاح') }}>{t('تصدير')}</Button>
+              <Button size="sm" onClick={() => { setForm({ cust: '', address: '', shipResp: '', method: '', carrier: 'أرامكس (Aramex)', tracking: '', label: '' }); setItems([{ name: '', qty: 1, price: 0, notes: '' }]); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> {t('إنشاء طلب')}</Button>
             </div>
           </div>
         } />
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} wide title="إنشاء طلب جديد"
-        footer={<><Button variant="outline" onClick={() => setCreateOpen(false)}>إلغاء</Button><Button disabled={create.isPending} onClick={submit}>حفظ الطلب</Button></>}>
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} wide title={t('إنشاء طلب جديد')}
+        footer={<><Button variant="outline" onClick={() => setCreateOpen(false)}>{t('إلغاء')}</Button><Button disabled={create.isPending} onClick={submit}>{t('حفظ الطلب')}</Button></>}>
         <div className="grid gap-3 md:grid-cols-2">
-          <div><Label>العميل <span className="text-destructive">*</span></Label><Input value={form.cust} onChange={e => setForm(f => ({ ...f, cust: e.target.value }))} /></div>
-          <div><Label>عنوان الشحن <span className="text-destructive">*</span></Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
-          <div><Label>مسؤولية الشحن <span className="text-destructive">*</span></Label>
+          <div><Label>{t('العميل')} <span className="text-destructive">*</span></Label><Input value={form.cust} onChange={e => setForm(f => ({ ...f, cust: e.target.value }))} /></div>
+          <div><Label>{t('عنوان الشحن')} <span className="text-destructive">*</span></Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+          <div><Label>{t('مسؤولية الشحن')} <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={form.shipResp} onChange={e => setForm(f => ({ ...f, shipResp: e.target.value as '' | 'منصة' | 'ذاتي' }))}>
-              <option value="">اختر...</option>
-              <option value="منصة">شحن المنصة (تتولى خدمة الطرف الثالث الشحن)</option>
-              <option value="ذاتي">الشحن الذاتي (يتولى التاجر الشحن)</option>
+              <option value="">{t('اختر...')}</option>
+              <option value="منصة">{t('شحن المنصة')} (تتولى خدمة الطرف الثالث الشحن)</option>
+              <option value="ذاتي">{t('الشحن الذاتي')} (يتولى التاجر الشحن)</option>
             </select></div>
           {form.shipResp === 'منصة' && <>
-            <div><Label>طريقة الشحن <span className="text-destructive">*</span></Label>
+            <div><Label>{t('شركة الشحن (Carrier)')} <span className="text-destructive">*</span></Label>
+              <select className={selectCls + ' w-full'} value={form.carrier} onChange={e => setForm(f => ({ ...f, carrier: e.target.value }))}>
+                {['أرامكس (Aramex)', 'سمسا إكسبريس (SMSA Express)', 'دي إتش إل (DHL Express)', 'فيديكس (FedEx)', 'سبل - البريد السعودي (SPL)', 'ناقل إكسبريس (Naqel)', 'ريد بوكس (RedBox)', 'جي آند تي إكسبريس (J&T Express)'].map(c => (
+                  <option key={c} value={c}>{t(c)}</option>
+                ))}
+              </select>
+            </div>
+            <div><Label>{t('طريقة الشحن')} <span className="text-destructive">*</span></Label>
               <select className={selectCls + ' w-full'} value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))}>
-                <option value="">اختر...</option>
-                {SHIP_METHODS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                <option value="">{t('اختر...')}</option>
+                {SHIP_METHODS.map(m => <option key={m.name} value={m.name}>{t(m.name)}</option>)}
               </select></div>
-            <div><Label>تكلفة الشحن (للعرض فقط)</Label><Input dir="ltr" readOnly value={form.method ? money(SHIP_METHODS.find(m => m.name === form.method)?.cost ?? 0) : '—'} /></div>
+            <div><Label>{t('تكلفة الشحن (للعرض فقط)')}</Label><Input dir="ltr" readOnly value={form.method ? money(SHIP_METHODS.find(m => m.name === form.method)?.cost ?? 0) : '—'} /></div>
           </>}
           {form.shipResp === 'ذاتي' && <>
-            <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">لقد اخترت الشحن الذاتي. يرجى إرفاق بوليصة شحنك لإتمام الطلب — يرجى إرفاق بوليصة شحن لإتمام الطلب.</div>
-            <div><Label>بوليصة الشحن (PDF/PNG/JPG/JPEG حتى 5MB) <span className="text-destructive">*</span></Label><Input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={e => onLabel(e.target.files?.[0] ?? null)} />{form.label && <p className="mt-1 text-[11px] font-bold text-muted-foreground">📎 {form.label}</p>}</div>
-            <div><Label>رقم التتبع (اختياري — 5 إلى 100 حرف)</Label><Input dir="ltr" value={form.tracking} onChange={e => setForm(f => ({ ...f, tracking: e.target.value }))} /></div>
+            <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">{t('لقد اخترت الشحن الذاتي. يرجى إرفاق بوليصة شحنك لإتمام الطلب — يرجى إرفاق بوليصة شحن لإتمام الطلب.')}</div>
+            <div className="md:col-span-2">
+              <FileUploadWithPreview
+                label="بوليصة الشحن (PDF/PNG/JPG/JPEG حتى 5MB)"
+                files={form.label ? [form.label] : []}
+                single
+                maxSizeMB={5}
+                onChange={files => setForm(f => ({ ...f, label: files[0] ?? '' }))}
+              />
+            </div>
+            <div><Label>{t('رقم التتبع')} ({t('اختياري — 5 إلى 100 حرف')})</Label><Input dir="ltr" value={form.tracking} onChange={e => setForm(f => ({ ...f, tracking: e.target.value }))} /></div>
           </>}
         </div>
         <div className="mt-4">
@@ -168,7 +193,7 @@ export default function MerchantOrdersPage() {
       </Modal>
       <Modal open={!!viewing} onClose={() => setViewing(null)} wide title={'تفاصيل الطلب — ' + (viewing?.ref ?? '')}
         footer={<>
-          {viewing?.shipResp === 'ذاتي' && viewing.label && <Button variant="outline" onClick={() => generateShippingLabel(viewing)}><Download className="size-4" /> تنزيل بوليصة الشحن</Button>}
+          <Button variant="outline" onClick={() => { setSelectedOrderForLabel(viewing); setCarrierModalOpen(true); }}><Download className="size-4" /> بوليصة الشحن (PDF)</Button>
           {viewing?.status === 'معلق' && <Button variant="destructive" onClick={() => setCancelling(viewing.ref)}>إلغاء الطلب</Button>}
         </>}>
         {viewing && <>
@@ -187,6 +212,40 @@ export default function MerchantOrdersPage() {
           <div className="space-y-1">{viewing.log.map((l, i) => <p key={i} className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {l}</p>)}</div>
         </>}
       </Modal>
+
+      {/* Carrier Selection Modal */}
+      <Modal
+        open={carrierModalOpen}
+        onClose={() => setCarrierModalOpen(false)}
+        title="اختيار شركة الشحن لطباعة البوليصة"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setCarrierModalOpen(false)}>إلغاء</Button>
+            <Button onClick={() => selectedOrderForLabel && generateShippingLabel(selectedOrderForLabel, selectedCarrier)}>
+              <Download className="size-4" /> إنشاء وطباعة البوليصة
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold text-muted-foreground">شركة الشحن (Carrier)</label>
+            <select
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-ring"
+              value={selectedCarrier}
+              onChange={e => setSelectedCarrier(e.target.value)}
+            >
+              {['أرامكس (Aramex)', 'سمسا إكسبريس (SMSA Express)', 'دي إتش إل (DHL Express)', 'فيديكس (FedEx)', 'سبل - البريد السعودي (SPL)', 'ناقل إكسبريس (Naqel)', 'ريد بوكس (RedBox)', 'جي آند تي إكسبريس (J&T Express)'].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            سيتم إنشاء بوليصة الشحن الرسمية متضمنة شعار واسم الناقل المختار وتفاصيل المستودع والعميل.
+          </p>
+        </div>
+      </Modal>
+
       <ConfirmDialog open={!!cancelling} onOpenChange={v => { if (!v) setCancelling(null) }} destructive title="إلغاء الطلب" loading={cancel.isPending}
         description={'هل أنت متأكد من رغبتك في إلغاء الطلب: ' + (cancelling ?? '') + '؟'}
         confirmLabel="إلغاء الطلب" onConfirm={() => cancel.mutate(cancelling!)} />

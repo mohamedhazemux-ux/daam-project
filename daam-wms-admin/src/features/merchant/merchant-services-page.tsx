@@ -1,4 +1,5 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -7,13 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/tables/data-table'
-import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, AttachmentBadgeList, ConfirmDialog, FileUploadWithPreview, Modal, StatusBadge, selectCls } from '@/components/common'
 import { merchantServicesService, type ServiceRequestM } from '@/services/merchant-services.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { downloadCSV, money, todayISO } from '@/lib/utils'
-import { Plus, Search } from 'lucide-react'
+import { useT } from '@/lib/i18n'
+import { Eye, Plus, Search, XCircle } from 'lucide-react'
 export default function MerchantServicesPage() {
+  const t = useT()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
   const [q, setQ] = useState('')
@@ -69,10 +73,10 @@ export default function MerchantServicesPage() {
     { accessorKey: 'preferred', header: 'التاريخ المفضل', cell: ({ row }: any) => row.original.preferred ?? '—' },
     { accessorKey: 'createdAt', header: 'تاريخ الطلب' },
     { id: 'actions', header: 'إجراءات', cell: ({ row }: any) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => setViewing(row.original)}>عرض التفاصيل</Button>
-        {row.original.status === 'معلق' && <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setCancelling(row.original.ref)}>إلغاء</Button>}
-      </div>) },
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض تفاصيل الطلب', onClick: () => navigate('/merchant/records/service-request/' + row.original.ref) },
+        { icon: XCircle, label: 'إلغاء طلب الخدمة', variant: 'destructive', onClick: () => setCancelling(row.original.ref), hidden: row.original.status !== 'معلق' },
+      ]} />) },
   ] as ColumnDef<any, unknown>[]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -81,24 +85,24 @@ export default function MerchantServicesPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[200px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث بالمرجع أو الخدمة أو المنتج..." className="pe-9" aria-label="بحث في طلبات الخدمة" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث بالمرجع أو الخدمة أو المنتج...')} className="pe-9" aria-label={t('بحث في طلبات الخدمة')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {['معلق', 'معتمد', 'مرفوض', 'قيد التنفيذ', 'مكتمل', 'ملغي'].map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {['معلق', 'معتمد', 'مرفوض', 'قيد التنفيذ', 'مكتمل', 'ملغي'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <select className={selectCls} value={urgency} onChange={e => { setUrgency(e.target.value); setPage(1) }} aria-label="تصفية حسب الإلحاح">
-              <option value="">كل مستويات الإلحاح</option>
-              {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{u}</option>)}
+            <select className={selectCls} value={urgency} onChange={e => { setUrgency(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الإلحاح')}>
+              <option value="">{t('كل مستويات الإلحاح')}</option>
+              {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{t(u)}</option>)}
             </select>
             <div className="ms-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => { downloadCSV('service-requests', ['المرجع', 'الخدمة', 'المنتج', 'الكمية', 'التكلفة التقديرية', 'الإلحاح', 'الحالة', 'التاريخ المفضل', 'تاريخ الطلب'], (data?.rows ?? []).map((x: any) => [x.ref, x.type, x.product ?? '', x.qty, x.estCost, x.urgency, x.status, x.preferred ?? '', x.createdAt])); toast.success('تم تصدير طلبات الخدمة بنجاح') }}>تصدير</Button>
-              <Button size="sm" onClick={() => { setForm({ type: '', product: '', qty: 1, preferred: '', urgency: '', notes: '', attachments: [], consent: false }); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> إنشاء طلب خدمة</Button>
+              <Button variant="outline" size="sm" onClick={() => { downloadCSV('service-requests', ['المرجع', 'الخدمة', 'المنتج', 'الكمية', 'التكلفة التقديرية', 'الإلحاح', 'الحالة', 'التاريخ المفضل', 'تاريخ الطلب'], (data?.rows ?? []).map((x: any) => [x.ref, x.type, x.product ?? '', x.qty, x.estCost, x.urgency, x.status, x.preferred ?? '', x.createdAt])); toast.success('تم تصدير طلبات الخدمة بنجاح') }}>{t('تصدير')}</Button>
+              <Button size="sm" onClick={() => { setForm({ type: '', product: '', qty: 1, preferred: '', urgency: '', notes: '', attachments: [], consent: false }); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> {t('إنشاء طلب خدمة')}</Button>
             </div>
           </div>
         } />
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} wide title="إنشاء طلب خدمة"
-        footer={<><Button variant="outline" onClick={() => setCreateOpen(false)}>إلغاء</Button><Button disabled={create.isPending} onClick={submit}>إرسال طلب الخدمة</Button></>}>
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} wide title={t('إنشاء طلب خدمة')}
+        footer={<><Button variant="outline" onClick={() => setCreateOpen(false)}>{t('إلغاء')}</Button><Button disabled={create.isPending} onClick={submit}>{t('إرسال طلب الخدمة')}</Button></>}>
         <div className="grid gap-3 md:grid-cols-2">
           <div><Label>نوع الخدمة <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value, product: '', consent: false }))}>
@@ -115,11 +119,18 @@ export default function MerchantServicesPage() {
           <div><Label>مستوى الإلحاح <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={form.urgency} onChange={e => setForm(f => ({ ...f, urgency: e.target.value }))}>
               <option value="">اختر...</option>
-              {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{u}</option>)}
+              {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{t(u)}</option>)}
             </select></div>
           <div><Label>ملاحظات (اختياري — 500 حرف)</Label><Textarea maxLength={500} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
-          <div className="md:col-span-2"><Label>المرفقات (JPG/PNG/JPEG/PDF حتى 10MB — حتى 5 ملفات)</Label><Input type="file" multiple accept=".jpg,.png,.jpeg,.pdf" onChange={e => onFiles(e.target.files)} />
-            {form.attachments.length > 0 && <p className="mt-1 text-[11px] font-bold text-muted-foreground">{form.attachments.map(x => '📎 ' + x).join('  ')}</p>}</div>
+          <div className="md:col-span-2">
+            <FileUploadWithPreview
+              label="المرفقات والوثائق الداعمة (اختياري)"
+              files={form.attachments}
+              accept=".jpg,.png,.jpeg,.pdf,.webp"
+              maxFiles={5}
+              onChange={atts => setForm(f => ({ ...f, attachments: atts }))}
+            />
+          </div>
         </div>
         {selType && (
           <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -146,7 +157,9 @@ export default function MerchantServicesPage() {
           </div>
           {viewing.recurring && viewing.status === 'معتمد' && <p className="mb-3 rounded-lg bg-violet-50 p-2 text-xs font-bold text-violet-800">اشتراك نشط — الفوترة القادمة: {viewing.timeline.length > 0 ? 'حسب التكرار ' + viewing.freq : ''}</p>}
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">المرفقات</p>
-          <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.attachments.length ? viewing.attachments.map(x => '📎 ' + x).join('  ') : '—'}</p>
+          <div className="mb-3">
+            <AttachmentBadgeList attachments={viewing.attachments} />
+          </div>
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">الخط الزمني للحالات</p>
           <div className="space-y-1">{viewing.timeline.map((t, i) => <p key={i} className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {t}</p>)}</div>
         </>}

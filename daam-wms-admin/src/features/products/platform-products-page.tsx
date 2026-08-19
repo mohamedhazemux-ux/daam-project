@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/tables/data-table'
-import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, ConfirmDialog, FileUploadWithPreview, Modal, StatusBadge, selectCls } from '@/components/common'
 import { productsService } from '@/services/products.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import type { PlatformProduct } from '@/types'
-import { Plus, Search } from 'lucide-react'
+import { CheckCircle2, Pencil, Plus, Search, Trash2, XCircle } from 'lucide-react'
 export default function PlatformProductsPage() {
   const qc = useQueryClient()
   const t = useT()
@@ -24,7 +24,7 @@ export default function PlatformProductsPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['platform-products'] })
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<PlatformProduct | null>(null)
-  const [form, setForm] = useState({ name: '', desc: '', status: 'نشط' as 'نشط' | 'غير نشط' })
+  const [form, setForm] = useState({ name: '', desc: '', status: 'نشط' as 'نشط' | 'غير نشط', img: '' })
   const [fErr, setFErr] = useState('')
   const [deleting, setDeleting] = useState<PlatformProduct | null>(null)
   // @ts-expect-error The two branches intentionally return different API payloads; the UI only needs completion.
@@ -39,16 +39,17 @@ export default function PlatformProductsPage() {
   }
   const columns: ColumnDef<PlatformProduct, unknown>[] = [
     { accessorKey: 'ref', header: t('المرجع'), cell: ({ row }) => <span className="rounded-md bg-foreground px-2 py-0.5 text-[11px] font-extrabold text-background">{row.original.ref}</span> },
+    { id: 'img', header: t('صورة'), cell: ({ row }) => row.original.img ? <img src={row.original.img} alt="" className="size-10 rounded-md object-cover" /> : <div className="size-10 rounded-md bg-muted" /> },
     { id: 'name', header: t('اسم المنتج'), cell: ({ row }) => <span className="font-bold">{row.original.name} <span className="ms-1 rounded-md bg-violet-50 px-2 py-0.5 text-[10.5px] font-extrabold text-violet-700">{t('منصة')}</span></span> },
     { accessorKey: 'desc', header: t('الوصف'), cell: ({ row }) => <span className="block max-w-[300px] truncate">{row.original.desc}</span> },
     { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'created', header: t('تاريخ الإنشاء'), cell: ({ row }) => arDate(row.original.created) },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => { setEditing(row.original); setForm({ name: row.original.name, desc: row.original.desc, status: row.original.status }); setFErr(''); setOpen(true) }}>{t('تعديل')}</Button>
-        <Button size="sm" variant="outline" onClick={() => toggle.mutate(row.original.ref)}>{row.original.status === 'نشط' ? t('تعطيل') : t('تفعيل')}</Button>
-        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setDeleting(row.original)}>{t('حذف')}</Button>
-      </div>) },
+      <ActionButtons actions={[
+        { icon: Pencil, label: 'تعديل', onClick: () => { setEditing(row.original); setForm({ name: row.original.name, desc: row.original.desc, status: row.original.status, img: row.original.img || '' }); setFErr(''); setOpen(true) } },
+        { icon: row.original.status === 'نشط' ? XCircle : CheckCircle2, label: row.original.status === 'نشط' ? 'تعطيل' : 'تفعيل', onClick: () => toggle.mutate(row.original.ref) },
+        { icon: Trash2, label: 'حذف', variant: 'destructive', onClick: () => setDeleting(row.original) },
+      ]} />) },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -67,7 +68,7 @@ export default function PlatformProductsPage() {
               <option value="نشط">{t('نشط')}</option>
               <option value="غير نشط">{t('غير نشط')}</option>
             </select>
-            <Button size="sm" className="ms-auto" onClick={() => { setEditing(null); setForm({ name: '', desc: '', status: 'نشط' }); setFErr(''); setOpen(true) }}><Plus className="size-4" /> {t('إنشاء منتج منصة')}</Button>
+            <Button size="sm" className="ms-auto" onClick={() => { setEditing(null); setForm({ name: '', desc: '', status: 'نشط', img: '' }); setFErr(''); setOpen(true) }}><Plus className="size-4" /> {t('إنشاء منتج منصة')}</Button>
           </div>
         } />
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? t('تعديل منتج منصة — ') + editing.ref : t('إنشاء منتج منصة جديد')}
@@ -79,7 +80,15 @@ export default function PlatformProductsPage() {
           {editing && <p className="text-xs font-bold text-muted-foreground">المرجع الداخلي: <b dir="ltr">{editing.ref}</b> (غير قابل للتعديل)</p>}
           <div><Label>اسم المنتج (3 – 100 حرف) <span className="text-destructive">*</span></Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
           <div><Label>وصف المنتج (اختياري — 1000 حرف)</Label><Textarea value={form.desc} maxLength={1000} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} /></div>
-          <div><Label>صورة المنتج (اختياري — JPG/PNG/JPEG حتى 5MB)</Label><Input type="file" accept=".jpg,.png,.jpeg" /></div>
+          <div>
+            <FileUploadWithPreview
+              single
+              label="صورة المنتج (JPG/PNG/JPEG حتى 5MB)"
+              accept=".jpg,.png,.jpeg,.webp"
+              files={form.img ? [form.img] : []}
+              onChange={files => setForm(f => ({ ...f, img: files[0] || '' }))}
+            />
+          </div>
           <div><Label>حالة المنتج <span className="text-destructive">*</span></Label>
             <div className="flex gap-5 pt-2">
               <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={form.status === 'نشط'} onChange={() => setForm(f => ({ ...f, status: 'نشط' }))} /> نشط</label>

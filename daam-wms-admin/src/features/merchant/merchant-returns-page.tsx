@@ -1,4 +1,5 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -7,13 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/tables/data-table'
-import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, AttachmentViewer, ConfirmDialog, FileUploadWithPreview, Modal, StatusBadge, selectCls } from '@/components/common'
 import { merchantReturnsService, RETURN_REASONS, RETURN_CONDITIONS, type MerchantReturn, type ReturnItem } from '@/services/merchant-returns.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { downloadCSV } from '@/lib/utils'
-import { Plus, Search, Trash2 } from 'lucide-react'
+import { useT } from '@/lib/i18n'
+import { Eye, Plus, Search, Trash2, XCircle } from 'lucide-react'
 export default function MerchantReturnsPage() {
+  const t = useT()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
   const [q, setQ] = useState('')
@@ -100,10 +104,10 @@ export default function MerchantReturnsPage() {
     { id: 'status', header: 'حالة الإرجاع', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { accessorKey: 'createdAt', header: 'تاريخ الإنشاء' },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => setViewing(row.original)}>عرض التفاصيل</Button>
-        {row.original.status === 'معلق' && <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setCancelling(row.original.ref)}>إلغاء</Button>}
-      </div>) },
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض تفاصيل الإرجاع', onClick: () => navigate('/merchant/records/return/' + row.original.ref) },
+        { icon: XCircle, label: 'إلغاء طلب الإرجاع', variant: 'destructive', onClick: () => setCancelling(row.original.ref), hidden: row.original.status !== 'معلق' },
+      ]} />) },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -112,27 +116,27 @@ export default function MerchantReturnsPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[200px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث بالمرجع أو الطلب أو العميل..." className="pe-9" aria-label="بحث في المرتجعات" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث بالمرجع أو الطلب أو العميل...')} className="pe-9" aria-label={t('بحث بالمرجع أو الطلب أو العميل...')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {['معلق', 'معتمد', 'مرفوض', 'في الطريق', 'مستلم', 'تم الفحص', 'تم الاسترداد', 'ملغي'].map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {['معلق', 'معتمد', 'مرفوض', 'في الطريق', 'مستلم', 'تم الفحص', 'تم الاسترداد', 'ملغي'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <select className={selectCls} value={type} onChange={e => { setType(e.target.value); setPage(1) }} aria-label="تصفية حسب النوع">
-              <option value="">كل الأنواع</option>
-              {['إرجاع للمخزون', 'إرجاع للتاجر', 'إتلاف'].map(t => <option key={t} value={t}>{t}</option>)}
+            <select className={selectCls} value={type} onChange={e => { setType(e.target.value); setPage(1) }} aria-label={t('تصفية حسب النوع')}>
+              <option value="">{t('كل الأنواع')}</option>
+              {['إرجاع للمخزون', 'إرجاع للتاجر', 'إتلاف'].map(tOpt => <option key={tOpt} value={tOpt}>{t(tOpt)}</option>)}
             </select>
-            <Input type="date" className="w-36" value={from} onChange={e => { setFrom(e.target.value); setPage(1) }} aria-label="من تاريخ" />
-            <Input type="date" className="w-36" value={to} onChange={e => { setTo(e.target.value); setPage(1) }} aria-label="إلى تاريخ" />
-            <Button variant="outline" size="sm" onClick={() => { setStatus(''); setType(''); setFrom(''); setTo(''); setPage(1) }}>إعادة التعيين</Button>
+            <Input type="date" className="w-36" value={from} onChange={e => { setFrom(e.target.value); setPage(1) }} aria-label={t('من تاريخ')} />
+            <Input type="date" className="w-36" value={to} onChange={e => { setTo(e.target.value); setPage(1) }} aria-label={t('إلى تاريخ')} />
+            <Button variant="outline" size="sm" onClick={() => { setStatus(''); setType(''); setFrom(''); setTo(''); setPage(1) }}>{t('إعادة التعيين')}</Button>
             <div className="ms-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => { downloadCSV('my-returns', ['المرجع', 'الطلب الأصلي', 'العميل', 'الأصناف', 'النوع', 'الحالة', 'طريقة الاسترداد', 'التاريخ'], (data?.rows ?? []).map(r => [r.ref, r.order, r.cust, r.totalItems, r.type, r.status, r.refundMethod, r.createdAt])); toast.success('تم تصدير طلبات الإرجاع بنجاح') }}>تصدير</Button>
-              <Button size="sm" onClick={() => { setOrderRef(''); setItems([]); setForm({ type: '', refundMethod: '', notes: '', attachments: [] }); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> إنشاء طلب إرجاع</Button>
+              <Button variant="outline" size="sm" onClick={() => { downloadCSV('my-returns', ['المرجع', 'الطلب الأصلي', 'العميل', 'الأصناف', 'النوع', 'الحالة', 'طريقة الاسترداد', 'التاريخ'], (data?.rows ?? []).map(r => [r.ref, r.order, r.cust, r.totalItems, r.type, r.status, r.refundMethod, r.createdAt])); toast.success('تم تصدير طلبات الإرجاع بنجاح') }}>{t('تصدير')}</Button>
+              <Button size="sm" onClick={() => { setOrderRef(''); setItems([]); setForm({ type: '', refundMethod: '', notes: '', attachments: [] }); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> {t('إنشاء طلب إرجاع')}</Button>
             </div>
           </div>
         } />
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} wide title="إنشاء طلب إرجاع"
-        footer={<><Button variant="outline" onClick={() => setCreateOpen(false)}>إلغاء</Button><Button disabled={create.isPending} onClick={submit}>إرسال طلب الإرجاع</Button></>}>
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} wide title={t('إنشاء طلب إرجاع')}
+        footer={<><Button variant="outline" onClick={() => setCreateOpen(false)}>{t('إلغاء')}</Button><Button disabled={create.isPending} onClick={submit}>{t('إرسال طلب الإرجاع')}</Button></>}>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="md:col-span-2"><Label>الطلب الأصلي (الطلبات المسلّمة فقط) <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={orderRef} onChange={e => { setOrderRef(e.target.value); setItems([]) }}>
@@ -162,11 +166,18 @@ export default function MerchantReturnsPage() {
                   <option value="">حالة الصنف المرتجع...</option>
                   {RETURN_CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
-                <div className="md:col-span-2 flex flex-wrap items-center gap-2">
-                  <Input type="file" multiple accept=".jpg,.png,.jpeg" className="flex-1" onChange={e => onImages(i, e.target.files)} aria-label="صور الصنف" />
-                  <Button variant="outline" size="icon" className="size-9 text-destructive" onClick={() => setItems(s => s.filter((_, j) => j !== i))} aria-label="حذف الصنف"><Trash2 className="size-4" /></Button>
+                <div className="md:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground">صور الصنف المرتجع</span>
+                    <Button variant="outline" size="sm" className="text-destructive h-7 text-xs" onClick={() => setItems(s => s.filter((_, j) => j !== i))}><Trash2 className="size-3.5 me-1" /> حذف الصنف</Button>
+                  </div>
+                  <FileUploadWithPreview
+                    files={it.images}
+                    accept=".jpg,.png,.jpeg,.webp"
+                    maxFiles={5}
+                    onChange={imgs => setItems(s => s.map((x, j) => j === i ? { ...x, images: imgs } : x))}
+                  />
                 </div>
-                {it.images.length > 0 && <p className="md:col-span-2 text-[11px] font-bold text-muted-foreground">{it.images.map(x => '🖼 ' + x).join('  ')}</p>}
               </div>
             ))}
           </div>
@@ -176,7 +187,7 @@ export default function MerchantReturnsPage() {
           <div><Label>نوع الإرجاع <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
               <option value="">اختر النوع...</option>
-              {['إرجاع للمخزون', 'إرجاع للتاجر', 'إتلاف'].filter(t => allowed.size === 0 || allowed.has(t)).map(t => <option key={t} value={t}>{t}</option>)}
+              {['إرجاع للمخزون', 'إرجاع للتاجر', 'إتلاف'].filter(tOpt => allowed.size === 0 || allowed.has(tOpt)).map(tOpt => <option key={tOpt} value={tOpt}>{tOpt}</option>)}
             </select>
             {allowed.size > 0 && <p className="mt-1 text-[11px] font-bold text-muted-foreground">الأنواع المتاحة مفلترة حسب حالات الأصناف المحددة</p>}</div>
           <div><Label>طريقة الاسترداد المفضلة <span className="text-destructive">*</span></Label>
@@ -186,8 +197,15 @@ export default function MerchantReturnsPage() {
               <option value="تحويل بنكي">تحويل بنكي</option>
             </select></div>
           <div className="md:col-span-2"><Label>ملاحظات الإرجاع (اختياري — 500 حرف)</Label><Textarea maxLength={500} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
-          <div className="md:col-span-2"><Label>المرفقات (اختياري — JPG/PNG/JPEG/PDF حتى 10MB — حتى 5 ملفات)</Label><Input type="file" multiple accept=".jpg,.png,.jpeg,.pdf" onChange={e => onFiles(e.target.files)} />
-            {form.attachments.length > 0 && <p className="mt-1 text-[11px] font-bold text-muted-foreground">{form.attachments.map(x => '📎 ' + x).join('  ')}</p>}</div>
+          <div className="md:col-span-2">
+            <Label className="mb-1 block">المرفقات الإضافية (اختياري — بوليصة، صور، فواتير)</Label>
+            <FileUploadWithPreview
+              files={form.attachments}
+              accept=".jpg,.png,.jpeg,.pdf,.webp"
+              maxFiles={5}
+              onChange={atts => setForm(f => ({ ...f, attachments: atts }))}
+            />
+          </div>
         </div>
         {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
       </Modal>
@@ -203,13 +221,13 @@ export default function MerchantReturnsPage() {
           <div className="overflow-hidden rounded-lg border">
             <table className="w-full text-sm"><thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">المنتج</th><th className="p-2 text-start font-extrabold">المرجع</th><th className="p-2 text-start font-extrabold">الكمية</th><th className="p-2 text-start font-extrabold">السبب</th><th className="p-2 text-start font-extrabold">الحالة</th><th className="p-2 text-start font-extrabold">الصور</th></tr></thead>
               <tbody>{viewing.items.map((i, idx) => (
-                <tr key={idx} className="border-b"><td className="p-2 font-bold">{i.name}</td><td className="p-2"><span dir="ltr">{i.ref}</span></td><td className="p-2">{i.qty}</td><td className="p-2">{i.reason}</td><td className="p-2">{i.condition}</td><td className="p-2 text-[11px]">{i.images.length ? i.images.map(x => '🖼 ' + x).join(' ') : '—'}</td></tr>))}
+                <tr key={idx} className="border-b"><td className="p-2 font-bold">{i.name}</td><td className="p-2"><span dir="ltr">{i.ref}</span></td><td className="p-2">{i.qty}</td><td className="p-2">{i.reason}</td><td className="p-2">{i.condition}</td><td className="p-2"><AttachmentViewer files={i.images} /></td></tr>))}
               </tbody></table>
           </div>
           <p className="mb-1 mt-3 text-xs font-extrabold text-muted-foreground">ملاحظات الإرجاع</p>
           <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.notes || '—'}</p>
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">المرفقات</p>
-          <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.attachments?.length ? viewing.attachments.map(x => '📎 ' + x).join('  ') : '—'}</p>
+          <div className="mb-3"><AttachmentViewer files={viewing.attachments ?? []} /></div>
           <p className="mb-1 text-xs font-extrabold text-muted-foreground">الخط الزمني للحالات</p>
           <div className="space-y-1">{viewing.timeline.map((t, i) => <p key={i} className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {t}</p>)}</div>
         </>}

@@ -45,4 +45,11 @@ export const merchantInventoryService = {
     return paginate(rows, q)
   },
   notesOf: (id: string) => reqNotes[id] ?? '',
+  async cancel(id: string) {
+    await delay(300)
+    const r = db.stockRequests.find(x => x.id === id)
+    if (!r) throw new Error('طلب المخزون غير موجود')
+    r.status = 'ملغي'
+    audit('إلغاء طلب مخزون: ' + id, 'مخزون التاجر', 'تعديل')
+  },
 }

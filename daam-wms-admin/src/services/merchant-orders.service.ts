@@ -1,21 +1,22 @@
-﻿import { db } from '@/mocks/db'
+import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
 import { merchantProducts } from './merchant-products.service'
 import { todayISO } from '@/lib/utils'
 import type { ListQuery, ListResult } from '@/types'
 export interface OrderItem { name: string; qty: number; price: number; notes?: string; platform?: boolean }
-export interface MerchantOrder { ref: string; m: string; cust: string; address: string; date: string; status: 'معلق' | 'قيد المعالجة' | 'مكتمل' | 'ملغي'; shipResp: 'منصة' | 'ذاتي'; method?: string; shipCost?: number; tracking?: string; label?: string; items: OrderItem[]; total: number; log: string[] }
+export interface MerchantOrder { ref: string; m: string; cust: string; address: string; date: string; status: 'معلق' | 'قيد المعالجة' | 'مكتمل' | 'ملغي'; shipResp: 'منصة' | 'ذاتي'; method?: string; shipCost?: number; tracking?: string; label?: string; notes?: string; attachments?: string[]; items: OrderItem[]; total: number; log: string[] }
 const seed = (): MerchantOrder[] => {
   const store = db.merchants[0]?.store ?? ''
   return [
-    { ref: 'ORD-901', m: store, cust: 'أحمد السالم', address: 'الرياض — حي النرجس', date: '2026-01-08', status: 'قيد المعالجة', shipResp: 'منصة', method: 'الشحن القياسي', shipCost: 25, items: [{ name: 'قهوة عربية مختصة 1كجم', qty: 2, price: 180 }, { name: 'بن محمص كولومبي 500جم', qty: 1, price: 95 }], total: 2 * 180 + 95 + 25, log: ['إنشاء الطلب بواسطة التاجر — 2026-01-08', 'تحديث الحالة إلى قيد المعالجة بواسطة المنصة — 2026-01-09'] },
-    { ref: 'ORD-902', m: store, cust: 'سارة العتيبي', address: 'جدة — حي الروضة', date: '2026-01-10', status: 'معلق', shipResp: 'ذاتي', tracking: 'TRK-889912', label: 'waybill-902.pdf', items: [{ name: 'أكياس قهوة ورقية (50 قطعة)', qty: 3, price: 40 }], total: 120, log: ['إنشاء الطلب بواسطة التاجر (شحن ذاتي + بوليصة مرفقة) — 2026-01-10'] },
-    { ref: 'ORD-903', m: store, cust: 'خالد المطيري', address: 'الدمام — حي الشاطئ', date: '2026-01-12', status: 'مكتمل', shipResp: 'منصة', method: 'الشحن السريع', shipCost: 45, items: [{ name: 'قهوة عربية مختصة 1كجم', qty: 1, price: 180, platform: false }], total: 225, log: ['إنشاء الطلب — 2026-01-12', 'اكتمال الطلب — 2026-01-14'] },
+    { ref: 'ORD-901', m: store, cust: 'أحمد السالم', address: 'الرياض — حي النرجس', date: '2026-01-08', status: 'قيد المعالجة', shipResp: 'منصة', method: 'الشحن القياسي', shipCost: 25, notes: 'يرجى التأكد من مطابقة الكمية قبل الإرسال.', attachments: ['order-checklist.pdf'], items: [{ name: 'قهوة عربية مختصة 1كجم', qty: 2, price: 180 }, { name: 'بن محمص كولومبي 500جم', qty: 1, price: 95 }], total: 2 * 180 + 95 + 25, log: ['إنشاء الطلب بواسطة التاجر — 2026-01-08', 'تحديث الحالة إلى قيد المعالجة بواسطة المنصة — 2026-01-09'] },
+    { ref: 'ORD-902', m: store, cust: 'سارة العتيبي', address: 'جدة — حي الروضة', date: '2026-01-10', status: 'معلق', shipResp: 'ذاتي', tracking: 'TRK-889912', label: 'waybill-902.pdf', notes: 'العميل طلب الاتصال قبل التسليم.', attachments: ['waybill-902.pdf', 'delivery-note.txt'], items: [{ name: 'أكياس قهوة ورقية (50 قطعة)', qty: 3, price: 40 }], total: 120, log: ['إنشاء الطلب بواسطة التاجر (شحن ذاتي + بوليصة مرفقة) — 2026-01-10'] },
+    { ref: 'ORD-903', m: store, cust: 'خالد المطيري', address: 'الدمام — حي الشاطئ', date: '2026-01-12', status: 'مكتمل', shipResp: 'منصة', method: 'الشحن السريع', shipCost: 45, notes: 'تم التسليم دون ملاحظات إضافية.', items: [{ name: 'قهوة عربية مختصة 1كجم', qty: 1, price: 180, platform: false }], total: 225, log: ['إنشاء الطلب — 2026-01-12', 'اكتمال الطلب — 2026-01-14'] },
+    { ref: 'ORD-904', m: store, cust: 'عبدالرحمن الشهري', address: 'الرياض — حي الملقا', date: '2026-01-15', status: 'ملغي', shipResp: 'ذاتي', notes: 'تم إلغاء الطلب بناء على رغبة العميل قبل خروج الشحنة.', items: [{ name: 'بن محمص كولومبي 500جم', qty: 2, price: 95 }], total: 190, log: ['إنشاء الطلب — 2026-01-15', 'إلغاء الطلب — 2026-01-16'] },
   ]
 }
 export const merchantOrders: MerchantOrder[] = seed()
-let seq = 903
+let seq = 904
 export const SHIP_METHODS = [{ name: 'الشحن القياسي', cost: 25 }, { name: 'الشحن السريع', cost: 45 }]
 export const merchantOrdersService = {
   async list(q: ListQuery & { store: string }): Promise<ListResult<MerchantOrder>> {
@@ -42,7 +43,7 @@ export const merchantOrdersService = {
     const total = input.items.reduce((s, i) => s + i.qty * i.price, 0) + shipCost
     const ref = 'ORD-' + ++seq
     merchantOrders.unshift({ ref, m: store, cust: input.cust, address: input.address, date: todayISO(), status: 'معلق', shipResp: input.shipResp, method: input.method, shipCost, tracking: input.tracking, label: input.label, items: input.items, total, log: ['إنشاء الطلب بواسطة التاجر — ' + todayISO() + (input.shipResp === 'ذاتي' ? ' (شحن ذاتي + بوليصة مرفقة)' : '')] })
-    db.orders.unshift({ id: ref, m: store, cust: input.cust, date: todayISO(), status: 'معلق', items: input.items.reduce((s, i) => s + i.qty, 0), total, ship: input.shipResp })
+    db.orders.unshift({ id: ref, m: store, cust: input.cust, date: todayISO(), status: 'معلق', items: input.items.reduce((s, i) => s + i.qty, 0), total, ship: input.shipResp, notes: '', attachments: input.label ? [input.label] : undefined })
     audit('إنشاء طلب ' + ref + ' — العميل: ' + input.cust + ' — مسؤولية الشحن: ' + input.shipResp + ' — الإجمالي: ' + total, 'طلبات التاجر', 'إنشاء')
     return ref
   },

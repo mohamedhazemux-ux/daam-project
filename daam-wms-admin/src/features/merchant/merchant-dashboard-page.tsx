@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,8 +11,10 @@ import { StatusBadge } from '@/components/common'
 import { merchantPortalService } from '@/services/merchant-portal.service'
 import { merchantProductsService } from '@/services/merchant-products.service'
 import { useAuthStore } from '@/store/auth-store'
+import { usePrefsStore } from '@/store/prefs-store'
 import { useT } from '@/lib/i18n'
 import { money, todayISO } from '@/lib/utils'
+import { printMerchantDashboardPDF } from '@/lib/pdf-utils'
 import { FileText, Layers, Package, ShoppingCart, Undo2, Wallet, FileDown, AlertTriangle } from 'lucide-react'
 function Line({ data }: { data: number[] }) {
   const max = Math.max(...data), min = Math.min(...data)
@@ -56,6 +58,41 @@ export default function MerchantDashboardPage() {
     setDErr('')
     toast.success('تم تطبيق نطاق التاريخ على بيانات لوحة التحكم')
   }
+  const exportDashboardPdf = () => {
+    if (!data) return
+    const success = printMerchantDashboardPDF({
+      merchantName: user?.name ?? 'التاجر',
+      storeName: user?.store ?? 'متجر التاجر',
+      date: todayISO(),
+      from: from || undefined,
+      to: to || undefined,
+      lang: usePrefsStore.getState().lang,
+      metrics: {
+        storagePct: data.storagePct,
+        storageUsed: data.used,
+        storageLimit: data.limit,
+        storageUnit: data.unit,
+        storageStatus: data.storageStatus,
+        totalProducts: an?.totalProducts ?? 0,
+        activeOrders: an?.activeOrders ?? 0,
+        completedOrders: an?.completedOrders ?? 0,
+        pendingReturns: an?.pendingReturns ?? 0,
+        walletBalance: data.walletBalance,
+        lowStock: an?.lowStock ?? 0,
+        outStock: an?.outStock ?? 0,
+        currentInvoiceAmount: data.currentInvoice ? data.currentInvoice.total : 0,
+        platformProducts: data.platformProducts,
+      },
+      topProducts: (an?.top ?? []).map(([label, value]) => ({ label, value })),
+      orderStatusDist: (an?.statusDist ?? []).map(([label, value]) => ({ label, value })),
+      stockByWarehouse: (an?.stockByWh ?? []).map(([warehouse, available, reserved]) => ({ warehouse, available, reserved })),
+    })
+    if (success) {
+      toast.success(t('تم تجهيز تقرير لوحة التحكم بصيغة PDF'))
+    } else {
+      toast.error(t('تعذر فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة ثم المحاولة.'))
+    }
+  }
   if (isLoading) return <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
   if (isError || !data) return <Card><CardContent className="p-8 text-center text-sm font-extrabold text-destructive">تعذر تحميل لوحة التحكم — سجّل الدخول مجددًا</CardContent></Card>
   const bar = data.storageStatus === 'متجاوز' ? 'bg-destructive' : data.storageStatus === 'تحذير' ? 'bg-warning' : 'bg-foreground'
@@ -65,7 +102,7 @@ export default function MerchantDashboardPage() {
         <div><Label>{t('من تاريخ')}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
         <div><Label>{t('إلى تاريخ')}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
         <Button size="sm" onClick={applyRange}>{t('تطبيق النطاق')}</Button>
-        <Button size="sm" variant="outline" className="ms-auto" onClick={() => toast.success('تم تصدير لوحة التحكم كتقرير PDF بنجاح')}><FileDown className="size-4" /> {t('تصدير PDF')}</Button>
+        <Button size="sm" variant="outline" className="ms-auto" onClick={exportDashboardPdf}><FileDown className="size-4" /> {t('تصدير PDF')}</Button>
         <p className="text-[11px] font-semibold text-muted-foreground">{t('تحديث تلقائي كل ٥ دقائق')}</p>
       </div>
       {dErr && <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 text-xs font-bold text-destructive">{dErr}</p>}

@@ -6,10 +6,10 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DataTable } from '@/components/tables/data-table'
-import { StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, StatusBadge, selectCls } from '@/components/common'
 import { merchantNotificationsService, type MNotif } from '@/services/merchant-notifications.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
-import { Search } from 'lucide-react'
+import { CheckCheck, Search, Trash2 } from 'lucide-react'
 import { getNotificationRoute } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
 
@@ -46,10 +46,10 @@ export default function MerchantNotificationsPage() {
     { id: 'read', header: 'حالة القراءة', cell: ({ row }) => row.original.unread ? <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">غير مقروء</span> : <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-600">مقروء</span> },
     { accessorKey: 'time', header: 'تم الاستلام في' },
     { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
-      <div className="flex gap-1">
-        {row.original.unread && <Button size="sm" variant="outline" onClick={() => { merchantNotificationsService.markRead(row.original.id); invalidate() }}>تحديد كمقروء</Button>}
-        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { merchantNotificationsService.remove(row.original.id); invalidate(); toast.success('تم حذف الإشعار') }}>حذف</Button>
-      </div>) },
+      <ActionButtons actions={[
+        { icon: CheckCheck, label: 'تحديد كمقروء', onClick: () => { merchantNotificationsService.markRead(row.original.id); invalidate() }, hidden: !row.original.unread },
+        { icon: Trash2, label: 'حذف الإشعار', variant: 'destructive', onClick: () => { merchantNotificationsService.remove(row.original.id); invalidate(); toast.success('تم حذف الإشعار') } },
+      ]} />) },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">

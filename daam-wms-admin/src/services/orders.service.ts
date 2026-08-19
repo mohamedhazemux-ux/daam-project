@@ -1,6 +1,8 @@
-﻿import { db } from '@/mocks/db'
+import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
+import { merchantOrders } from './merchant-orders.service'
+import { todayISO } from '@/lib/utils'
 import type { ListQuery, ListResult, Order } from '@/types'
 
 export const ordersService = {
@@ -17,7 +19,16 @@ export const ordersService = {
   },
   async setStatus(ids: string[], status: Order['status']) {
     await delay(400)
-    db.orders.forEach(o => { if (ids.includes(o.id)) o.status = status })
+    db.orders.forEach(o => {
+      if (ids.includes(o.id)) {
+        o.status = status
+        const mo = merchantOrders.find(x => x.ref === o.id)
+        if (mo) {
+          mo.status = status as any
+          mo.log.unshift(`تحديث حالة الطلب إلى "${status}" بواسطة إدارة المنصة — ${todayISO()}`)
+        }
+      }
+    })
     audit('تحديث حالة الطلب ' + ids.join('، ') + ' إلى ' + status, 'طلبات', 'تعديل')
   },
   async assignPicker(id: string, picker: string) {

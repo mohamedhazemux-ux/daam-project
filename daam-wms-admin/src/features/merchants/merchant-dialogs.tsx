@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Modal, StatusBadge, selectCls } from '@/components/common'
+import { AttachmentBadgeList, FileUploadWithPreview, Modal, StatusBadge, selectCls } from '@/components/common'
 import { merchantSchema, type MerchantForm } from '@/schemas/merchant.schema'
 import { merchantService, storageStatus } from '@/services/merchant.service'
 import { arDate, generatePassword, initials } from '@/lib/utils'
@@ -24,6 +24,7 @@ export function MerchantFormDialog({ open, onOpenChange, merchant, onSaved }: {
   onSaved: () => void
 }) {
   const [busy, setBusy] = useState(false)
+  const [attachments, setAttachments] = useState<string[]>([])
   const { register, handleSubmit, setValue, watch, reset, setError, formState: { errors } } = useForm<MerchantForm>({ resolver: zodResolver(merchantSchema), defaultValues: { unit: 'م³', limit: 60 } })
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export function MerchantFormDialog({ open, onOpenChange, merchant, onSaved }: {
       bank: merchant.bank, iban: merchant.iban, email: merchant.email, phone: merchant.phone, gender: merchant.gender,
       limit: merchant.limit, unit: merchant.unit, notes: merchant.notes ?? '',
     } : { unit: 'م³', limit: 60 })
+    setAttachments(merchant?.attachments ?? [])
   }, [open, merchant, reset])
 
   const first = watch('first') ?? ''
@@ -51,14 +53,14 @@ export function MerchantFormDialog({ open, onOpenChange, merchant, onSaved }: {
         return
       }
       if (merchant) {
-        const patch = { ...v }
+        const patch = { ...v, attachments }
         delete (patch as { email?: string }).email
         delete (patch as { natId?: string }).natId
         delete (patch as { password?: string }).password
         await merchantService.update(merchant.id, patch)
         toast.success('تم تحديث بيانات التاجر بنجاح')
       } else {
-        const merchantInput = { ...v }
+        const merchantInput = { ...v, attachments }
         delete (merchantInput as { password?: string }).password
         await merchantService.create(merchantInput)
         toast.success('تم إنشاء التاجر بنجاح — تم إرسال بيانات الدخول إلى بريد التاجر')
@@ -116,8 +118,17 @@ export function MerchantFormDialog({ open, onOpenChange, merchant, onSaved }: {
             <option value="وحدات">وحدات</option>
           </select></div>
         <div className="md:col-span-2"><Label>ملاحظات (اختياري — 500 حرف كحد أقصى)</Label><Textarea maxLength={500} {...register('notes')} />{errors.notes && <p className="mt-1 text-xs font-bold text-destructive">{errors.notes.message}</p>}</div>
-        <div className="md:col-span-2"><Label>المرفقات (اختياري — JPG/PNG/JPEG/PDF حتى 5MB وبحد أقصى 8 ملفات)</Label><Input type="file" multiple accept=".jpg,.png,.jpeg,.pdf" />
-          <p className="mt-1 text-[11px] font-semibold text-muted-foreground">يرجى توفير المستندات الرسمية للمتجر (مثل السجل التجاري + شهادة التسجيل الضريبي أو وثيقة العمل الحر) لإجراء مراجعة التاجر</p></div>
+        <div className="md:col-span-2">
+          <FileUploadWithPreview
+            label="المرفقات الرسمية (السجل التجاري، شهادة الضريبة، وثيقة العمل الحر)"
+            files={attachments}
+            onChange={setAttachments}
+            maxFiles={8}
+            maxSizeMB={10}
+            accept=".jpg,.png,.jpeg,.pdf"
+            helperText="يرجى توفير المستندات الرسمية للمتجر (مثل السجل التجاري + شهادة التسجيل الضريبي أو وثيقة العمل الحر) لإجراء مراجعة التاجر"
+          />
+        </div>
         {!merchant && (
           <div className="md:col-span-2"><Label>كلمة مرور التاجر <span className="text-destructive">*</span></Label>
             <div className="flex gap-2">
@@ -146,24 +157,13 @@ export function MerchantDetailDialog({ merchant, onClose }: { merchant: Merchant
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {kv.map(([k, v]) => <div key={k as string} className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>)}
       </div>
-      {merchant.notes && (
-        <>
-          <h4 className="mt-4 text-sm font-extrabold">الملاحظات</h4>
-          <div className="rounded-lg border bg-muted/40 p-3 text-sm font-semibold">{merchant.notes}</div>
-        </>
-      )}
-      {merchant.attachments && merchant.attachments.length > 0 && (
-        <>
-          <h4 className="mt-4 text-sm font-extrabold">المرفقات</h4>
-          <div className="flex flex-wrap gap-2">
-            {merchant.attachments.filter(Boolean).map(item => (
-              <span key={item} className="rounded-md border bg-card px-2 py-1 text-[11px] font-bold">
-                📎 {item}
-              </span>
-            ))}
-          </div>
-        </>
-      )}
+      <h4 className="mt-4 text-sm font-extrabold">الملاحظات والمرفقات</h4>
+      <div className="space-y-3">
+        <div className="rounded-lg border bg-muted/40 p-3 text-sm font-semibold">{merchant.notes || 'لا توجد ملاحظات مرتبطة بهذا التاجر.'}</div>
+        <div>
+          <AttachmentBadgeList attachments={merchant.attachments} emptyText="لا توجد مرفقات مرتبطة بهذا التاجر." />
+        </div>
+      </div>
       <h4 className="mt-4 text-sm font-extrabold">حد التخزين المجاني (CR-003)</h4>
       <div className="flex h-2 overflow-hidden rounded-full bg-muted"><div className={'h-full ' + (st === 'متجاوز' ? 'bg-destructive' : st === 'تحذير' ? 'bg-warning' : 'bg-foreground')} style={{ width: Math.min(100, pct) + '%' }} /></div>
       <div className="mt-2 flex flex-wrap gap-4 text-xs font-bold text-muted-foreground">

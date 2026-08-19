@@ -8,8 +8,8 @@ export interface ServiceRequestM { ref: string; m: string; type: string; desc: s
 const seed = (): ServiceRequestM[] => {
   const s = db.merchants[0]?.store ?? ''
   return [
-    { ref: 'SRV-M-001', m: s, type: 'تخزين موسع', desc: 'توفير مساحة تخزين إضافية', product: 'قهوة عربية مختصة 1كجم', qty: 2, estCost: 240, urgency: 'عادي', status: 'معلق', preferred: '2026-02-01', notes: '', attachments: [], recurring: true, freq: 'شهري', consent: true, createdAt: '2026-01-10', timeline: ['معلق — 2026-01-10'] },
-    { ref: 'SRV-M-002', m: s, type: 'تغليف هدايا', desc: 'تغليف طلبات المناسبات', qty: 10, estCost: 500, actualCost: 450, urgency: 'عاجل', status: 'معتمد', preferred: '2026-01-20', notes: '', attachments: ['spec.pdf'], recurring: false, createdAt: '2026-01-05', timeline: ['معلق — 2026-01-05', 'معتمد بواسطة منى المطيري بتكلفة فعلية 450 — 2026-01-06'] },
+    { ref: 'SRV-M-001', m: s, type: 'تخزين موسع', desc: 'توفير مساحة تخزين إضافية', product: 'قهوة عربية مختصة 1كجم', qty: 2, estCost: 240, urgency: 'عادي', status: 'معلق', preferred: '2026-02-01', notes: 'نحتاج مساحة إضافية قبل موسم الطلبات القادم.', attachments: ['storage-plan.xlsx'], recurring: true, freq: 'شهري', consent: true, createdAt: '2026-01-10', timeline: ['معلق — 2026-01-10'] },
+    { ref: 'SRV-M-002', m: s, type: 'تغليف هدايا', desc: 'تغليف طلبات المناسبات', qty: 10, estCost: 500, actualCost: 450, urgency: 'عاجل', status: 'معتمد', preferred: '2026-01-20', notes: 'يرجى استخدام ألوان التغليف المعتمدة للعلامة التجارية.', attachments: ['spec.pdf', 'gift-preview.jpg'], recurring: false, createdAt: '2026-01-05', timeline: ['معلق — 2026-01-05', 'معتمد بواسطة منى المطيري بتكلفة فعلية 450 — 2026-01-06'] },
   ]
 }
 export const SERVICE_REQUESTS: ServiceRequestM[] = seed()

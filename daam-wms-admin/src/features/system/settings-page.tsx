@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Modal, StatusBadge, selectCls } from '@/components/common'
+import { FileUploadWithPreview, Modal, StatusBadge, selectCls } from '@/components/common'
 import { systemService } from '@/services/system.service'
 import { systemExtraService, EVENTS, type EmailTemplate } from '@/services/system-extra.service'
 import { usePrefsStore } from '@/store/prefs-store'
@@ -15,6 +15,7 @@ const TABS: [string, string][] = [['general', 'عام'], ['orders', 'الطلب�
 export default function SettingsPage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState('general')
+  const [logo, setLogo] = useState<string[]>([])
   const t = useT()
   const { data: events } = useQuery({ queryKey: ['notif-events'], queryFn: () => systemService.notifEvents() })
   const { data: integrations } = useQuery({ queryKey: ['integrations'], queryFn: () => systemExtraService.integrations() })
@@ -56,7 +57,16 @@ export default function SettingsPage() {
           <Card><CardHeader><CardTitle className="text-sm">{t('الإعدادات العامة')}</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div><Label>{t('اسم المنصة (3 – 100 حرف)')} <span className="text-destructive">*</span></Label><Input defaultValue="الدعم الرائدة" /></div>
-              <div><Label>{t('شعار المنصة (PNG/SVG حتى 2MB)')}</Label><Input type="file" accept=".png,.svg" /></div>
+              <div>
+                <FileUploadWithPreview
+                  label={t('شعار المنصة (PNG/SVG حتى 2MB)')}
+                  files={logo}
+                  accept=".png,.svg"
+                  single
+                  maxSizeMB={2}
+                  onChange={setLogo}
+                />
+              </div>
               <div><Label>{t('العملة الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="SAR"><option value="SAR">ريال سعودي (SAR)</option><option value="AED">درهم إماراتي</option><option value="KWD">دينار كويتي</option></select></div>
               <div><Label>{t('اللغة الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="ar"><option value="ar">{t('العربية')}</option><option value="en">English</option></select></div>
               <div className="md:col-span-2"><Button onClick={() => systemService.saveSettings('عام').then(() => toast.success('تم تحديث معاملات النظام بنجاح — تم تطبيق التغييرات فورًا'))}>{t('حفظ التغييرات')}</Button></div>

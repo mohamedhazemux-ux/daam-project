@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/tables/data-table'
-import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, AttachmentBadgeList, ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
 import { financeService } from '@/services/finance.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, downloadCSV, money } from '@/lib/utils'
 import type { Invoice, Wallet, Withdrawal } from '@/types'
-import { Search } from 'lucide-react'
+import { CheckCheck, CheckCircle, Download, Edit3, Eye, Mail, Search, Send, XCircle } from 'lucide-react'
 import { printInvoicePDF } from '@/lib/pdf-utils'
 import { useT } from '@/lib/i18n'
 
@@ -79,15 +79,13 @@ export function WithdrawalsPage() {
     { id: 'date', header: t('تاريخ الطلب'), cell: ({ row }) => arDate(row.original.date) },
     { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => { const w = row.original; return (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => navigate(`/records/withdrawal/${w.id}`)}>{t('عرض')}</Button>
-        {w.status === 'معلق' && <>
-          <Button size="sm" variant="outline" onClick={() => setApproving(w.id)}>{t('اعتماد')}</Button>
-          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(w.id); setReason(''); setRErr('') }}>{t('رفض')}</Button>
-        </>}
-        {w.status === 'معتمد' && <Button size="sm" variant="outline" onClick={() => { setProcessing(w); setPNotes(''); setPErr('') }}>{t('تنفيذ الدفع')}</Button>}
-        {w.status === 'قيد التنفيذ' && <Button size="sm" variant="outline" onClick={() => { setCompleting(w); setConfirmNo(''); setCNotes(''); setCErr('') }}>{t('تأكيد الاكتمال')}</Button>}
-      </div>) } },
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate(`/records/withdrawal/${w.id}`) },
+        { icon: CheckCircle, label: 'اعتماد الطلب', onClick: () => setApproving(w.id), hidden: w.status !== 'معلق' },
+        { icon: XCircle, label: 'رفض الطلب', variant: 'destructive', onClick: () => { setRejecting(w.id); setReason(''); setRErr('') }, hidden: w.status !== 'معلق' },
+        { icon: Send, label: 'تنفيذ الدفع', onClick: () => { setProcessing(w); setPNotes(''); setPErr('') }, hidden: w.status !== 'معتمد' },
+        { icon: CheckCheck, label: 'تأكيد الاكتمال', onClick: () => { setCompleting(w); setConfirmNo(''); setCNotes(''); setCErr('') }, hidden: w.status !== 'قيد التنفيذ' },
+      ]} />) } },
   ]
 
   return (
@@ -101,7 +99,7 @@ export function WithdrawalsPage() {
             </div>
             <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
               <option value="">{t('كل الحالات')}</option>
-              {['معلق', 'معتمد', 'قيد التنفيذ', 'مكتمل', 'مرفوض'].map(s => <option key={s} value={s}>{s}</option>)}
+              {['معلق', 'معتمد', 'قيد التنفيذ', 'مكتمل', 'مرفوض'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
             <span className="ms-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">{(data?.rows ?? []).filter(w => w.status === 'معلق').length} {t('طلب بانتظار المراجعة')}</span>
           </div>
@@ -207,13 +205,8 @@ export function WithdrawalsPage() {
             )}
             {viewing.attachment && (
               <div>
-                <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
-                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
-                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>{t('تحميل المرفق')}</Button>
-                  </div>
-                </div>
+                <p className="mb-1 text-[11px] font-bold text-muted-foreground">المرفقات</p>
+                <AttachmentBadgeList attachments={[viewing.attachment]} />
               </div>
             )}
           </div>
@@ -226,6 +219,7 @@ export function WithdrawalsPage() {
 /* ---------- محافظ التجار ---------- */
 export function WalletsPage() {
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -257,15 +251,18 @@ export function WalletsPage() {
   }
 
   const columns: ColumnDef<Wallet, unknown>[] = [
-    { id: 'merchant', header: 'التاجر', cell: ({ row }) => <div><p className="font-bold">{row.original.m}</p><p className="text-[11px] text-muted-foreground">{row.original.email}</p></div> },
-    { id: 'bal', header: 'الرصيد الحالي', cell: ({ row }) => <span className={row.original.bal < 0 ? 'font-black text-destructive' : 'font-bold'}>{money(row.original.bal)}</span> },
-    { id: 'res', header: 'المحجوز', cell: ({ row }) => money(row.original.res) },
-    { id: 'avail', header: 'المتاح', cell: ({ row }) => money(row.original.bal - row.original.res) },
-    { id: 'credits', header: 'إجمالي الإيداعات', cell: ({ row }) => money(row.original.credits) },
-    { id: 'debits', header: 'إجمالي السحوبات', cell: ({ row }) => money(row.original.debits) },
-    { id: 'last', header: 'آخر عملية', cell: ({ row }) => arDate(row.original.last) },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => <Button size="sm" variant="outline" onClick={() => { setAdjusting(row.original); setForm({ type: 'إيداع (إضافة للرصيد)', amount: 0, reason: '', notes: '' }); setFErr(''); setConfirmStep(false) }}>تعديل يدوي</Button> },
+    { id: 'merchant', header: t('التاجر'), cell: ({ row }) => <div><p className="font-bold">{row.original.m}</p><p className="text-[11px] text-muted-foreground">{row.original.email}</p></div> },
+    { id: 'bal', header: t('الرصيد الحالي'), cell: ({ row }) => <span className={row.original.bal < 0 ? 'font-black text-destructive' : 'font-bold'}>{money(row.original.bal)}</span> },
+    { id: 'res', header: t('المحجوز'), cell: ({ row }) => money(row.original.res) },
+    { id: 'avail', header: t('المتاح'), cell: ({ row }) => money(row.original.bal - row.original.res) },
+    { id: 'credits', header: t('إجمالي الإيداعات'), cell: ({ row }) => money(row.original.credits) },
+    { id: 'debits', header: t('إجمالي السحوبات'), cell: ({ row }) => money(row.original.debits) },
+    { id: 'last', header: t('آخر عملية'), cell: ({ row }) => arDate(row.original.last) },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
+      <ActionButtons actions={[
+        { icon: Edit3, label: 'تعديل يدوي للرصيد', onClick: () => { setAdjusting(row.original); setForm({ type: 'إيداع (إضافة للرصيد)', amount: 0, reason: '', notes: '' }); setFErr(''); setConfirmStep(false) } },
+      ]} />) },
   ]
 
   return (
@@ -276,13 +273,13 @@ export function WalletsPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث بالتاجر أو البريد..." className="pe-9" aria-label="بحث في المحافظ" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث بالتاجر أو البريد...')} className="pe-9" aria-label={t('بحث في المحافظ')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {['نشط', 'موقوف', 'مجمّد'].map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {['نشط', 'موقوف', 'مجمّد'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <p className="ms-auto text-xs font-semibold text-muted-foreground">المحافظ ذات الرصيد السالب تظهر باللون الأحمر</p>
+            <p className="ms-auto text-xs font-semibold text-muted-foreground">{t('المحافظ ذات الرصيد السالب تظهر باللون الأحمر')}</p>
           </div>
         } />
 
@@ -329,6 +326,7 @@ export function WalletsPage() {
 export function InvoicesPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -343,24 +341,24 @@ export function InvoicesPage() {
   const markPaid = useMutation({ mutationFn: (ref: string) => financeService.markPaid(ref), onSuccess: () => { toast.success('تم تحديد الفاتورة كمدفوعة بنجاح'); invalidate() } })
 
   const columns: ColumnDef<Invoice, unknown>[] = [
-    { accessorKey: 'ref', header: 'مرجع الفاتورة', cell: ({ row }) => <button dir="ltr" className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/invoice/${row.original.ref}`)}>{row.original.ref}</button> },
-    { accessorKey: 'm', header: 'التاجر' },
-    { accessorKey: 'period', header: 'الفترة' },
-    { id: 'total', header: 'المبلغ المستحق', cell: ({ row }) => <b>{money(row.original.total)}</b> },
-    { id: 'due', header: 'الاستحقاق', cell: ({ row }) => arDate(row.original.due) },
-    { id: 'gen', header: 'تاريخ الإنشاء', cell: ({ row }) => arDate(row.original.gen) },
-    { id: 'sent', header: 'تاريخ الإرسال', cell: ({ row }) => arDate(row.original.sent) },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => setViewing(row.original)}>عرض</Button>
-        <Button size="sm" variant="outline" onClick={() => {
+    { accessorKey: 'ref', header: t('مرجع الفاتورة'), cell: ({ row }) => <button dir="ltr" className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/invoice/${row.original.ref}`)}>{row.original.ref}</button> },
+    { accessorKey: 'm', header: t('التاجر') },
+    { accessorKey: 'period', header: t('الفترة') },
+    { id: 'total', header: t('المبلغ المستحق'), cell: ({ row }) => <b>{money(row.original.total)}</b> },
+    { id: 'due', header: t('الاستحقاق'), cell: ({ row }) => arDate(row.original.due) },
+    { id: 'gen', header: t('تاريخ الإنشاء'), cell: ({ row }) => arDate(row.original.gen) },
+    { id: 'sent', header: t('تاريخ الإرسال'), cell: ({ row }) => arDate(row.original.sent) },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض التفاصيل', onClick: () => setViewing(row.original) },
+        { icon: Download, label: 'تنزيل / طباعة PDF', onClick: () => {
           if (generateInvoicePdf(row.original)) toast.success('تم فتح الفاتورة للطباعة أو الحفظ بصيغة PDF')
           else toast.error('تعذر فتح الفاتورة. يرجى السماح بالنوافذ المنبثقة ثم المحاولة.')
-        }}>تنزيل PDF</Button>
-        <Button size="sm" variant="outline" onClick={() => setResending(row.original.ref)}>إعادة إرسال</Button>
-        {row.original.status !== 'مدفوعة' && <Button size="sm" variant="outline" onClick={() => markPaid.mutate(row.original.ref)}>تحديد كمدفوعة</Button>}
-      </div>) },
+        } },
+        { icon: Mail, label: 'إعادة إرسال الفاتورة', onClick: () => setResending(row.original.ref) },
+        { icon: CheckCircle, label: 'تحديد كمدفوعة', onClick: () => markPaid.mutate(row.original.ref), hidden: row.original.status === 'مدفوعة' },
+      ]} />) },
   ]
 
   return (
@@ -371,13 +369,13 @@ export function InvoicesPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث بمرجع الفاتورة أو التاجر..." className="pe-9" aria-label="بحث في الفواتير" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث بمرجع الفاتورة أو التاجر...')} className="pe-9" aria-label={t('بحث في الفواتير')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {['تم الإنشاء', 'مرسلة', 'مستعرضة', 'مدفوعة', 'متأخرة'].map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {['تم الإنشاء', 'مرسلة', 'مستعرضة', 'مدفوعة', 'متأخرة'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('invoices', ['المرجع', 'التاجر', 'الفترة', 'الإجمالي', 'الاستحقاق', 'الحالة'], (data?.rows ?? []).map(i => [i.ref, i.m, i.period, i.total, i.due, i.status])); toast.success('تم تصدير الملف بنجاح') }}>تصدير</Button>
+            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('invoices', ['المرجع', 'التاجر', 'الفترة', 'الإجمالي', 'الاستحقاق', 'الحالة'], (data?.rows ?? []).map(i => [i.ref, i.m, i.period, i.total, i.due, i.status])); toast.success('تم تصدير الملف بنجاح') }}>{t('تصدير')}</Button>
           </div>
         } />
 

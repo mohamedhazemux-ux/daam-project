@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -7,16 +7,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/tables/data-table'
-import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, AttachmentBadgeList, ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
 import { servicesService } from '@/services/services.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, money, todayISO } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import type { ServiceRequest, ServiceType, Subscription } from '@/types'
-import { Search } from 'lucide-react'
+import { CheckCircle, CheckCircle2, Eye, Pencil, RefreshCw, Search, XCircle } from 'lucide-react'
 const STAFF = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن', 'ناصر كمال']
 const UNITS = ['لكل قطعة', 'لكل ساعة', 'لكل طبلية', 'لكل طلب', 'ثابتة']
 export function ServiceRequestsPage() {
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState(''); const [urgency, setUrgency] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
   const qp = useMemo(() => ({ q: dq, urgency, status, page, pageSize: 10 }), [dq, urgency, status, page])
@@ -32,24 +34,22 @@ export function ServiceRequestsPage() {
   const reject = useMutation({ mutationFn: (v: { ref: string; reason: string }) => servicesService.rejectRequest(v.ref, v.reason), onSuccess: () => { toast.success('تم رفض طلب الخدمة بنجاح'); invalidate(); setRejecting(null) } })
   const advance = useMutation({ mutationFn: (ref: string) => servicesService.advanceStatus(ref), onSuccess: s => { toast.success('تم تحديث حالة طلب الخدمة إلى ' + s + ' بنجاح'); invalidate() }, onError: e => toast.error((e as Error).message) })
   const columns: ColumnDef<ServiceRequest, unknown>[] = [
-    { accessorKey: 'ref', header: 'المرجع', cell: ({ row }) => <b>{row.original.ref}</b> },
-    { accessorKey: 'm', header: 'التاجر' },
-    { accessorKey: 'type', header: 'الخدمة' },
-    { accessorKey: 'prod', header: 'المنتج المرتبط' },
-    { accessorKey: 'qty', header: 'الكمية' },
-    { id: 'cost', header: 'التكلفة', cell: ({ row }) => money(row.original.cost) },
-    { id: 'urgency', header: 'الإلحاح', cell: ({ row }) => <StatusBadge value={row.original.urgency} /> },
-    { id: 'date', header: 'التاريخ المفضل', cell: ({ row }) => arDate(row.original.date) },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => { const s = row.original; return (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => setViewing(s)}>عرض</Button>
-        {s.status === 'معلق' && <>
-          <Button size="sm" variant="outline" onClick={() => { setApproving(s); setForm({ cost: s.cost, date: todayISO(), staff: '', notes: '' }); setFErr('') }}>اعتماد</Button>
-          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(s.ref); setReason(''); setRErr('') }}>رفض</Button>
-        </>}
-        {(s.status === 'معتمد' || s.status === 'قيد التنفيذ') && <Button size="sm" variant="outline" onClick={() => advance.mutate(s.ref)}>تحديث الحالة</Button>}
-      </div>) } },
+    { accessorKey: 'ref', header: t('المرجع'), cell: ({ row }) => <b>{row.original.ref}</b> },
+    { accessorKey: 'm', header: t('التاجر') },
+    { accessorKey: 'type', header: t('الخدمة') },
+    { accessorKey: 'prod', header: t('المنتج المرتبط') },
+    { accessorKey: 'qty', header: t('الكمية') },
+    { id: 'cost', header: t('التكلفة'), cell: ({ row }) => money(row.original.cost) },
+    { id: 'urgency', header: t('الإلحاح'), cell: ({ row }) => <StatusBadge value={row.original.urgency} /> },
+    { id: 'date', header: t('التاريخ المفضل'), cell: ({ row }) => arDate(row.original.date) },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => { const s = row.original; return (
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض التفاصيل', onClick: () => setViewing(s) },
+        { icon: CheckCircle, label: 'اعتماد الطلب', onClick: () => { setApproving(s); setForm({ cost: s.cost, date: todayISO(), staff: '', notes: '' }); setFErr('') }, hidden: s.status !== 'معلق' },
+        { icon: XCircle, label: 'رفض الطلب', variant: 'destructive', onClick: () => { setRejecting(s.ref); setReason(''); setRErr('') }, hidden: s.status !== 'معلق' },
+        { icon: RefreshCw, label: s.status === 'معتمد' ? 'بدء التنفيذ' : 'إكمال الخدمة', onClick: () => advance.mutate(s.ref), hidden: s.status !== 'معتمد' && s.status !== 'قيد التنفيذ' },
+      ]} />) } },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -59,17 +59,17 @@ export function ServiceRequestsPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث بالمرجع أو التاجر أو الخدمة..." className="pe-9" aria-label="بحث في طلبات الخدمة" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث بالمرجع أو التاجر أو الخدمة...')} className="pe-9" aria-label={t('بحث في طلبات الخدمة')} />
             </div>
-            <select className={selectCls} value={urgency} onChange={e => { setUrgency(e.target.value); setPage(1) }} aria-label="تصفية حسب الإلحاح">
-              <option value="">كل مستويات الإلحاح</option>
-              {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{u}</option>)}
+            <select className={selectCls} value={urgency} onChange={e => { setUrgency(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الإلحاح')}>
+              <option value="">{t('كل مستويات الإلحاح')}</option>
+              {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{t(u)}</option>)}
             </select>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {['معلق', 'معتمد', 'قيد التنفيذ', 'مكتمل', 'مرفوض'].map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {['معلق', 'معتمد', 'قيد التنفيذ', 'مكتمل', 'مرفوض'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <p className="ms-auto text-xs font-semibold text-muted-foreground">الطلبات الحرجة محاطة بإطار أحمر</p>
+            <p className="ms-auto text-xs font-semibold text-muted-foreground">{t('الطلبات الحرجة محاطة بإطار أحمر')}</p>
           </div>
         } />
       <Modal open={!!approving} onClose={() => setApproving(null)} title={'اعتماد طلب الخدمة — ' + (approving?.ref ?? '')}
@@ -156,13 +156,8 @@ export function ServiceRequestsPage() {
             )}
             {viewing.attachment && (
               <div>
-                <p className="text-[11px] font-bold text-muted-foreground">المرفقات</p>
-                <div className="mt-1 rounded-lg border bg-muted/40 p-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-blue-600">📎 {viewing.attachment}</span>
-                    <Button size="sm" variant="outline" onClick={() => toast.success(`تم تحميل المرفق: ${viewing.attachment}`)}>تحميل المرفق</Button>
-                  </div>
-                </div>
+                <p className="mb-1 text-[11px] font-bold text-muted-foreground">المرفقات</p>
+                <AttachmentBadgeList attachments={[viewing.attachment]} />
               </div>
             )}
           </div>
@@ -173,6 +168,7 @@ export function ServiceRequestsPage() {
 }
 export function SubscriptionsPage() {
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState(''); const [status, setStatus] = useState(''); const [freq, setFreq] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
   const qp = useMemo(() => ({ q: dq, status, freq, page, pageSize: 10 }), [dq, status, freq, page])
@@ -180,15 +176,18 @@ export function SubscriptionsPage() {
   const [cancelling, setCancelling] = useState<Subscription | null>(null)
   const cancel = useMutation({ mutationFn: (id: string) => servicesService.cancelSubscription(id), onSuccess: () => { toast.success('تم إلغاء الاشتراك بنجاح'); qc.invalidateQueries({ queryKey: ['subscriptions'] }); setCancelling(null) } })
   const columns: ColumnDef<Subscription, unknown>[] = [
-    { accessorKey: 'id', header: 'الاشتراك', cell: ({ row }) => <b>{row.original.id}</b> },
-    { accessorKey: 'm', header: 'التاجر' },
-    { accessorKey: 'type', header: 'الخدمة' },
-    { id: 'cost', header: 'تكلفة الدورة', cell: ({ row }) => money(row.original.cost) },
-    { id: 'freq', header: 'الدورية', cell: ({ row }) => <span className="rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-700">{row.original.freq}</span> },
-    { id: 'next', header: 'الفوترة القادمة', cell: ({ row }) => arDate(row.original.next) },
-    { id: 'total', header: 'إجمالي المفوتر', cell: ({ row }) => money(row.original.total) },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => row.original.status === 'نشط' ? <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => setCancelling(row.original)}>إلغاء</Button> : null },
+    { accessorKey: 'id', header: t('الاشتراك'), cell: ({ row }) => <b>{row.original.id}</b> },
+    { accessorKey: 'm', header: t('التاجر') },
+    { accessorKey: 'type', header: t('الخدمة') },
+    { id: 'cost', header: t('تكلفة الدورة'), cell: ({ row }) => money(row.original.cost) },
+    { id: 'freq', header: t('الدورية'), cell: ({ row }) => <span className="rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-700">{row.original.freq}</span> },
+    { id: 'next', header: t('الفوترة القادمة'), cell: ({ row }) => arDate(row.original.next) },
+    { id: 'total', header: t('إجمالي المفوتر'), cell: ({ row }) => money(row.original.total) },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
+      <ActionButtons actions={[
+        { icon: XCircle, label: 'إلغاء الاشتراك', variant: 'destructive', onClick: () => setCancelling(row.original), hidden: row.original.status !== 'نشط' },
+      ]} />) },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -198,27 +197,28 @@ export function SubscriptionsPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث بالتاجر أو الخدمة..." className="pe-9" aria-label="بحث في الاشتراكات" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث بالتاجر أو الخدمة...')} className="pe-9" aria-label={t('بحث في الاشتراكات')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {['نشط', 'ملغي', 'فشل الدفع'].map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {['نشط', 'ملغي', 'فشل الدفع'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <select className={selectCls} value={freq} onChange={e => { setFreq(e.target.value); setPage(1) }} aria-label="تصفية حسب الدورية">
-              <option value="">كل الدوريات</option>
-              {['شهري', 'ربع سنوي', 'أسبوعي', 'سنوي'].map(f => <option key={f} value={f}>{f}</option>)}
+            <select className={selectCls} value={freq} onChange={e => { setFreq(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الدورية')}>
+              <option value="">{t('كل الدوريات')}</option>
+              {['شهري', 'ربع سنوي', 'أسبوعي', 'سنوي'].map(f => <option key={f} value={f}>{t(f)}</option>)}
             </select>
-            <p className="ms-auto text-xs font-semibold text-muted-foreground">اشتراكات فشل الدفع مميزة بالأحمر (CR-004)</p>
+            <p className="ms-auto text-xs font-semibold text-muted-foreground">{t('اشتراكات فشل الدفع مميزة بالأحمر (CR-004)')}</p>
           </div>
         } />
-      <ConfirmDialog open={!!cancelling} onOpenChange={v => { if (!v) setCancelling(null) }} destructive title="إلغاء الاشتراك" loading={cancel.isPending}
+      <ConfirmDialog open={!!cancelling} onOpenChange={v => { if (!v) setCancelling(null) }} destructive title={t('إلغاء الاشتراك')} loading={cancel.isPending}
         description={'هل أنت متأكد من إلغاء اشتراك ' + (cancelling?.type ?? '') + ' للتاجر ' + (cancelling?.m ?? '') + '؟ لن تُطبق أي رسوم مستقبلية.'}
-        confirmLabel="إلغاء الاشتراك" onConfirm={() => cancel.mutate(cancelling!.id)} />
+        confirmLabel={t('إلغاء الاشتراك')} onConfirm={() => cancel.mutate(cancelling!.id)} />
     </div>
   )
 }
 export function ServiceTypesPage() {
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState(''); const [page, setPage] = useState(1)
   const dq = useDebouncedValue(q, 300)
   const qp = useMemo(() => ({ q: dq, page, pageSize: 10 }), [dq, page])
@@ -239,19 +239,19 @@ export function ServiceTypesPage() {
     save.mutate()
   }
   const columns: ColumnDef<ServiceType, unknown>[] = [
-    { accessorKey: 'name', header: 'اسم الخدمة', cell: ({ row }) => <b>{row.original.name}</b> },
-    { accessorKey: 'desc', header: 'الوصف', cell: ({ row }) => <span className="block max-w-[280px] truncate">{row.original.desc}</span> },
-    { id: 'cost', header: 'التكلفة الأساسية', cell: ({ row }) => money(row.original.cost) },
-    { accessorKey: 'unit', header: 'وحدة التكلفة' },
-    { id: 'model', header: 'نموذج الدفع', cell: ({ row }) => <StatusBadge value={row.original.model} /> },
-    { id: 'freq', header: 'الدورية', cell: ({ row }) => row.original.freq === '—' ? '—' : <span className="rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-700">{row.original.freq}</span> },
-    { accessorKey: 'prod', header: 'يتطلب منتجًا' },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => { setEditing(row.original); setForm(row.original); setFErr(''); setOpen(true) }}>تعديل</Button>
-        <Button size="sm" variant="outline" onClick={() => toggle.mutate(row.original.name)}>{row.original.status === 'نشط' ? 'تعطيل' : 'تفعيل'}</Button>
-      </div>) },
+    { accessorKey: 'name', header: t('اسم الخدمة'), cell: ({ row }) => <b>{row.original.name}</b> },
+    { accessorKey: 'desc', header: t('الوصف'), cell: ({ row }) => <span className="block max-w-[280px] truncate">{row.original.desc}</span> },
+    { id: 'cost', header: t('التكلفة الأساسية'), cell: ({ row }) => money(row.original.cost) },
+    { accessorKey: 'unit', header: t('وحدة التكلفة') },
+    { id: 'model', header: t('نموذج الدفع'), cell: ({ row }) => <StatusBadge value={row.original.model} /> },
+    { id: 'freq', header: t('الدورية'), cell: ({ row }) => row.original.freq === '—' ? '—' : <span className="rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-700">{row.original.freq}</span> },
+    { accessorKey: 'prod', header: t('يتطلب منتجًا') },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
+      <ActionButtons actions={[
+        { icon: Pencil, label: 'تعديل', onClick: () => { setEditing(row.original); setForm(row.original); setFErr(''); setOpen(true) } },
+        { icon: row.original.status === 'نشط' ? XCircle : CheckCircle2, label: row.original.status === 'نشط' ? 'تعطيل' : 'تفعيل', onClick: () => toggle.mutate(row.original.name) },
+      ]} />) },
   ]
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -260,9 +260,9 @@ export function ServiceTypesPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث في أنواع الخدمات..." className="pe-9" aria-label="بحث في أنواع الخدمات" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث في أنواع الخدمات...')} className="pe-9" aria-label={t('بحث في أنواع الخدمات')} />
             </div>
-            <Button size="sm" className="ms-auto" onClick={() => { setEditing(null); setForm({ name: '', desc: '', cost: 0, unit: 'لكل قطعة', prod: 'نعم', status: 'نشط', model: 'دفعة واحدة', freq: '—' }); setFErr(''); setOpen(true) }}>إنشاء نوع خدمة</Button>
+            <Button size="sm" className="ms-auto" onClick={() => { setEditing(null); setForm({ name: '', desc: '', cost: 0, unit: 'لكل قطعة', prod: 'نعم', status: 'نشط', model: 'دفعة واحدة', freq: '—' }); setFErr(''); setOpen(true) }}>{t('إنشاء نوع خدمة')}</Button>
           </div>
         } />
       <Modal open={open} onClose={() => setOpen(false)} wide title={editing ? 'تعديل نوع الخدمة' : 'إنشاء نوع خدمة جديد'}

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -6,9 +6,8 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { DataTable } from '@/components/tables/data-table'
-import { StatusBadge, ConfirmDialog, selectCls } from '@/components/common'
+import { ActionButtons, ConfirmDialog, StatusBadge, selectCls } from '@/components/common'
 import { MerchantFormDialog, MerchantDetailDialog } from './merchant-dialogs'
 import { merchantService, storageStatus } from '@/services/merchant.service'
 import { useAuthStore } from '@/store/auth-store'
@@ -16,7 +15,7 @@ import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, downloadCSV, initials } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import type { Merchant } from '@/types'
-import { MoreHorizontal, Plus, Search } from 'lucide-react'
+import { Eye, Pencil, Plus, Search, Trash2, UserCheck, UserX } from 'lucide-react'
 
 export default function MerchantsPage() {
   const navigate = useNavigate()
@@ -58,17 +57,12 @@ export default function MerchantsPage() {
     { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'join', header: t('الانضمام'), cell: ({ row }) => <StatusBadge value={row.original.join} /> },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background hover:bg-accent" aria-label={t('إجراءات')}>
-          <MoreHorizontal className="size-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => navigate(`/records/merchant/${row.original.id}`)}>{t('عرض')}</DropdownMenuItem>
-          {can('merchants.update') && <DropdownMenuItem onClick={() => { setEditing(row.original); setFormOpen(true) }}>{t('تعديل')}</DropdownMenuItem>}
-          {can('merchants.update') && <DropdownMenuItem onClick={() => toggleStatus.mutate(row.original.id)}>{row.original.status === 'نشط' ? t('إيقاف') : t('تفعيل')}</DropdownMenuItem>}
-          {can('merchants.delete') && <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleting(row.original)}>{t('حذف')}</DropdownMenuItem>}
-        </DropdownMenuContent>
-      </DropdownMenu>) },
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate(`/records/merchant/${row.original.id}`) },
+        { icon: Pencil, label: 'تعديل', onClick: () => { setEditing(row.original); setFormOpen(true) }, hidden: !can('merchants.update') },
+        { icon: row.original.status === 'نشط' ? UserX : UserCheck, label: row.original.status === 'نشط' ? 'إيقاف الحساب' : 'تفعيل الحساب', onClick: () => toggleStatus.mutate(row.original.id), hidden: !can('merchants.update') },
+        { icon: Trash2, label: 'حذف', variant: 'destructive', onClick: () => setDeleting(row.original), hidden: !can('merchants.delete') },
+      ]} />) },
   ]
 
   return (

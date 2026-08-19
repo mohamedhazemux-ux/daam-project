@@ -1,11 +1,11 @@
-﻿import { db } from './db'
+import { db } from './db'
 import { merchantProducts } from '@/services/merchant-products.service'
 import { merchantOrders } from '@/services/merchant-orders.service'
 import { merchantReturns } from '@/services/merchant-returns.service'
 import { TXS } from '@/services/merchant-finance.service'
 import { SERVICE_REQUESTS } from '@/services/merchant-services.service'
 const KEY = 'daam-db-v1'
-const VERSION = 3
+const VERSION = 5
 interface Snapshot { v: number; db: typeof db; mp: unknown[]; mo: unknown[]; mr: unknown[]; tx: unknown[]; sr: unknown[] }
 const hydrate = (target: unknown[], saved?: unknown[]) => { if (Array.isArray(saved)) { target.length = 0; target.push(...saved) } }
 try {

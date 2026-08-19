@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { NotificationsPopover } from './notifications-popover'
+import { Breadcrumbs } from './breadcrumbs'
 import { audit } from '@/services/audit.service'
 import { cn, initials } from '@/lib/utils'
 import { BrandLogo } from '@/components/brand-logo'
@@ -29,21 +30,66 @@ const NAV: { section: string; items: { to: string; label: string; icon: LucideIc
   { section: 'الخدمات', items: [{ to: '/services/requests', label: 'طلبات الخدمة', icon: Wrench }, { to: '/services/subscriptions', label: 'الاشتراكات', icon: RefreshCw }, { to: '/services/types', label: 'أنواع الخدمات', icon: Settings }] },
   { section: 'النظام', items: [{ to: '/reports', label: 'التقارير', icon: BarChart3 }, { to: '/settings', label: 'الإعدادات', icon: Settings }, { to: '/logs', label: 'السجلات', icon: ScrollText }, { to: '/notifications', label: 'الإشعارات', icon: Bell }] },
 ]
+const RECORD_KIND_TO_NAV: Record<string, string> = {
+  order: '/orders',
+  merchant: '/merchants',
+  withdrawal: '/finance/withdrawals',
+  invoice: '/finance/invoices',
+  return: '/returns',
+  'stock-request': '/inventory/requests',
+  'service-request': '/services/requests',
+  approval: '/approvals',
+}
+
+const RECORD_KIND_TITLES: Record<string, string> = {
+  order: 'تفاصيل الطلب',
+  merchant: 'تفاصيل التاجر',
+  withdrawal: 'تفاصيل طلب السحب',
+  invoice: 'تفاصيل الفاتورة',
+  return: 'تفاصيل طلب الإرجاع',
+  'stock-request': 'تفاصيل طلب المخزون',
+  'service-request': 'تفاصيل طلب الخدمة',
+  approval: 'تفاصيل طلب الموافقة',
+}
+
+export function isNavActive(pathname: string, targetTo: string): boolean {
+  if (targetTo === '/') return pathname === '/'
+  if (pathname === targetTo || pathname.startsWith(targetTo + '/')) return true
+  if (pathname.startsWith('/records/')) {
+    const kind = pathname.split('/')[2]
+    return RECORD_KIND_TO_NAV[kind] === targetTo
+  }
+  return false
+}
+
 function SidebarContent() {
   const t = useT()
+  const location = useLocation()
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b px-5 py-4"><BrandLogo /></div>
+      <div className="flex h-20 items-center border-b px-5"><BrandLogo /></div>
       <nav className="flex-1 space-y-4 overflow-y-auto p-3" aria-label="تنقل لوحة الإدارة">
         {NAV.map(g => (
           <div key={g.section}>
             <p className="mb-1 px-3 text-[10.5px] font-black text-muted-foreground">{t(g.section)}</p>
-            {g.items.map(it => (
-              <NavLink key={it.to} to={it.to} end={it.to === '/'} className={({ isActive }) => cn('mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-bold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground', isActive && 'bg-foreground text-background hover:bg-foreground hover:text-background')}>
-                <it.icon className="size-[18px] shrink-0" aria-hidden />
-                <span className="flex-1">{t(it.label)}</span>
-              </NavLink>
-            ))}
+            {g.items.map(it => {
+              const active = isNavActive(location.pathname, it.to)
+              return (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  className={cn(
+                    'mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors',
+                    active
+                      ? 'bg-foreground text-background hover:bg-foreground hover:text-background'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  <it.icon className="size-[18px] shrink-0" aria-hidden />
+                  <span className="flex-1">{t(it.label)}</span>
+                </NavLink>
+              )
+            })}
           </div>
         ))}
       </nav>
@@ -60,7 +106,15 @@ export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const t = useT()
   const lang = usePrefsStore(s => s.lang)
-  const title = TITLES[location.pathname] ?? 'لوحة التحكم'
+  const getPageTitle = (pathname: string): string => {
+    if (TITLES[pathname]) return TITLES[pathname]
+    if (pathname.startsWith('/records/')) {
+      const kind = pathname.split('/')[2]
+      return RECORD_KIND_TITLES[kind] ?? 'تفاصيل السجل'
+    }
+    return 'لوحة التحكم'
+  }
+  const title = getPageTitle(location.pathname)
   const sheetSide = lang === 'ar' ? 'right' : 'left'
   return (
     <div className="flex min-h-screen">
@@ -69,11 +123,13 @@ export function AppShell() {
         <SheetContent side={sheetSide} className="w-[280px] p-0"><SidebarContent /></SheetContent>
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-20 items-center gap-3 border-b bg-card px-4 lg:px-6">
           <Button variant="outline" size="icon" className="lg:hidden" onClick={toggleSidebar} aria-label={t('فتح القائمة')}><Menu className="size-4" /></Button>
           <div className="min-w-0">
             <h1 className="truncate text-[15px] font-extrabold">{t(title)}</h1>
-            <p className="hidden text-[11px] font-semibold text-muted-foreground sm:block">{t('إدارة المنصة')} / {t(title)}</p>
+            <div className="hidden sm:block">
+              <Breadcrumbs portal="admin" />
+            </div>
           </div>
           <div className="ms-auto flex items-center gap-2">
             <NotificationsPopover />

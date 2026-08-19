@@ -1,7 +1,17 @@
-﻿import { db } from '@/mocks/db'
+import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
+import { merchantReturns } from './merchant-returns.service'
+import { todayISO } from '@/lib/utils'
 import type { ListQuery, ListResult, ReturnRequest } from '@/types'
+
+function syncMerchantReturn(ref: string, status: string, logMsg: string) {
+  const mr = merchantReturns.find(x => x.ref === ref)
+  if (mr) {
+    mr.status = status
+    mr.timeline.unshift(`${logMsg} — ${todayISO()}`)
+  }
+}
 
 export const returnsService = {
   async list(q: ListQuery): Promise<ListResult<ReturnRequest>> {
@@ -20,6 +30,7 @@ export const returnsService = {
     if (!r) throw new Error('مرجع الإرجاع غير موجود')
     r.status = 'معتمد'
     db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
+    syncMerchantReturn(ref, 'معتمد', 'اعتماد طلب الإرجاع وتوليد بوليصة الشحن')
     audit('اعتماد طلب الإرجاع ' + ref + ' (' + r.type + ') — توليد بوليصة إرجاع وإرسال التعليمات للتاجر والعميل', 'مرتجعات', 'اعتماد')
   },
   async reject(ref: string, reason: string) {
@@ -29,6 +40,7 @@ export const returnsService = {
     r.status = 'مرفوض'
     r.reason = reason
     db.approvals = db.approvals.filter(a => a.sourceRef !== ref)
+    syncMerchantReturn(ref, 'مرفوض', `رفض طلب الإرجاع — السبب: ${reason}`)
     audit('رفض طلب الإرجاع ' + ref + ' — السبب: ' + reason, 'مرتجعات', 'رفض')
   },
   async receive(ref: string) {
@@ -37,6 +49,7 @@ export const returnsService = {
     if (!r) throw new Error('مرجع الإرجاع غير موجود')
     if (r.status !== 'في الطريق') throw new Error('يجب أن يكون طلب الإرجاع بحالة "في الطريق" لاستلام القطع')
     r.status = 'مستلم'
+    syncMerchantReturn(ref, 'مستلم', 'استلام الشحنة المرتجعة في المستودع')
     audit('استلام مرتجعات ' + ref + ' (' + r.count + ' قطعة)', 'مرتجعات')
   },
   async inspect(ref: string, results: { condition: string }[]) {
@@ -48,6 +61,7 @@ export const returnsService = {
     const toStock = results.filter(x => x.condition === 'غير مفتوح' || x.condition === 'مفتوح لكن غير مستخدم').length
     const toMerchant = results.filter(x => x.condition === 'مستخدم').length
     const dispose = results.filter(x => x.condition === 'تالف').length
+    syncMerchantReturn(ref, 'تم الفحص', `فحص المرتجعات — سليم: ${toStock} | تالف: ${dispose}`)
     audit('فحص مرتجعات ' + ref + ' — إجمالي: ' + results.length + ' | للمخزون: ' + toStock + ' | للتاجر: ' + toMerchant + ' | إتلاف: ' + dispose, 'مرتجعات')
     return { toStock, toMerchant, dispose }
   },
@@ -62,6 +76,7 @@ export const returnsService = {
       if (w) w.bal += amount
     }
     const txRef = 'RF-' + ref.slice(-4)
+    syncMerchantReturn(ref, 'تم الاسترداد', `معالجة الاسترداد المالي بقيمة ${amount} ر.س — مرجع: ${txRef}`)
     audit('استرداد ' + ref + ' عبر ' + method + ' بمبلغ ' + amount + ' — مرجع العملية: ' + txRef, 'مرتجعات', 'اعتماد')
     return txRef
   },

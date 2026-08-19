@@ -1,4 +1,4 @@
-﻿import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Modal, selectCls } from '@/components/common'
+import { AttachmentBadgeList, FileUploadWithPreview, Modal, selectCls } from '@/components/common'
 import { useAuthStore } from '@/store/auth-store'
 import { merchantPortalService } from '@/services/merchant-portal.service'
 import { initials } from '@/lib/utils'
@@ -99,8 +99,10 @@ export default function MerchantProfilePage() {
             <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>))}
         </div>
         <div className="mt-3 rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">الملاحظات والبيانات الإضافية</p><p className="text-[13px] font-extrabold">{p.notes || '—'}</p></div>
-        <div className="mt-3"><p className="mb-1 text-[11px] font-bold text-muted-foreground">المرفقات</p>
-          <div className="flex flex-wrap gap-2">{p.attachments.map(a => <span key={a} className="rounded-md border bg-card px-2 py-1 text-[11px] font-bold">📎 {a}</span>)}</div></div>
+        <div className="mt-3">
+          <p className="mb-2 text-[11px] font-bold text-muted-foreground">المرفقات والوثائق</p>
+          <AttachmentBadgeList attachments={p.attachments} emptyText="لا توجد مرفقات مرتبطة بهذا الحساب." />
+        </div>
       </CardContent></Card>
       <Card><CardHeader><CardTitle className="text-sm">بيانات الحساب</CardTitle></CardHeader><CardContent className="space-y-3">
         {[['حالة الحساب', 'نشط'], ['تاريخ الانضمام', '2024-03-12'], ['آخر تسجيل دخول', 'اليوم']].map(([k, v]) => (
@@ -127,8 +129,16 @@ export default function MerchantProfilePage() {
               <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={form.gender === 'أنثى'} onChange={() => setForm(f => ({ ...f, gender: 'أنثى' }))} /> أنثى</label>
             </div></div>
           <div className="md:col-span-2"><Label>الملاحظات والبيانات الإضافية (اختياري — 500 حرف)</Label><Textarea maxLength={500} value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
-          <div className="md:col-span-2"><Label>المرفقات (JPG/PNG/JPEG/PDF حتى 5MB — حتى 8 ملفات)</Label><Input type="file" multiple accept=".jpg,.png,.jpeg,.pdf" onChange={e => onAttach(e.target.files)} />
-            {files.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{files.map(a => <span key={a} className="rounded-md border bg-card px-2 py-1 text-[11px] font-bold">📎 {a}</span>)}</div>}</div>
+          <div className="md:col-span-2">
+            <Label className="mb-1 block">المرفقات والوثائق (حتى 8 ملفات)</Label>
+            <FileUploadWithPreview
+              files={files}
+              accept=".jpg,.png,.jpeg,.pdf,.webp"
+              maxFiles={8}
+              maxSizeMB={5}
+              onChange={setFiles}
+            />
+          </div>
         </div>
         {err && <p className="mt-2 text-xs font-bold text-destructive">{err}</p>}
       </Modal>

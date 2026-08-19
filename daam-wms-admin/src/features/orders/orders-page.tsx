@@ -6,19 +6,20 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DataTable } from '@/components/tables/data-table'
-import { StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, Modal, StatusBadge, selectCls } from '@/components/common'
 import { ordersService } from '@/services/orders.service'
 import { merchantService } from '@/services/merchant.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, downloadCSV, money } from '@/lib/utils'
 import { printPackingSlipPDF, printShippingLabelPDF } from '@/lib/pdf-utils'
+import { useT } from '@/lib/i18n'
 import type { Order } from '@/types'
 import { Eye, Printer, Search, Truck } from 'lucide-react'
-
 
 const STATUSES = ['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي']
 
 export default function OrdersPage() {
+  const t = useT()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [q, setQ] = useState('')
@@ -38,6 +39,10 @@ export default function OrdersPage() {
     onSuccess: () => { toast.success('تم التحقق بنجاح: تم تحديث حالة الطلب بنجاح'); invalidate() },
   })
 
+  const [carrierModalOpen, setCarrierModalOpen] = useState(false)
+  const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<string | null>(null)
+  const [selectedCarrier, setSelectedCarrier] = useState('أرامكس (Aramex)')
+
   const printSlip = (order: Order) => {
     printPackingSlipPDF({
       orderNumber: order.id,
@@ -53,12 +58,27 @@ export default function OrdersPage() {
     })
     toast.success('تم تجهيز قائمة التجميع والطباعة (PDF)')
   }
-  const printLabel = (id: string) => {
+
+  const openLabelModal = (id: string) => {
     const o = (data?.rows ?? []).find(x => x.id === id)
     if (!o) {
       toast.error('الطلب غير موجود')
       return
     }
+    if (o.ship === 'ذاتي') {
+      toast.error('إدارة بوليصة الشحن تتم بواسطة التاجر للطلبات ذاتية الشحن')
+      return
+    }
+    setSelectedOrderForLabel(id)
+    setCarrierModalOpen(true)
+  }
+
+  const confirmPrintLabel = (carrier: string) => {
+    if (!selectedOrderForLabel) return
+    const id = selectedOrderForLabel
+    const o = (data?.rows ?? []).find(x => x.id === id)
+    if (!o) return
+
     ordersService.printLabel(id)
       .then(() => {
         printShippingLabelPDF({
@@ -67,27 +87,29 @@ export default function OrdersPage() {
           shippingAddress: 'الرياض — المملكة العربية السعودية',
           merchantName: o.m,
           trackingNumber: 'TRK-88' + o.id.slice(-4),
-          date: arDate(o.date)
+          date: arDate(o.date),
+          carrier,
         })
-        toast.success('تم إنشاء بوليصة الشحن (PDF) وتنزيلها')
+        toast.success(`تم إنشاء بوليصة الشحن عبر (${carrier}) وتنزيلها`)
+        setCarrierModalOpen(false)
       })
       .catch(e => toast.error((e as Error).message))
   }
 
   const columns: ColumnDef<Order, unknown>[] = [
-    { id: 'id', header: 'رقم الطلب', cell: ({ row }) => <button className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/order/${row.original.id}`)}>{row.original.id}</button> },
-    { accessorKey: 'm', header: 'التاجر' },
-    { id: 'date', header: 'التاريخ', cell: ({ row }) => arDate(row.original.date) },
-    { accessorKey: 'items', header: 'المنتجات', cell: ({ row }) => row.original.items + ' منتجات' },
-    { id: 'total', header: 'الإجمالي', cell: ({ row }) => <b>{money(row.original.total)}</b> },
-    { id: 'ship', header: 'مسؤولية الشحن', cell: ({ row }) => <StatusBadge value={row.original.ship} /> },
-    { id: 'status', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.status} /> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button variant="outline" size="icon" className="size-8" aria-label="عرض التفاصيل" onClick={() => navigate(`/records/order/${row.original.id}`)}><Eye className="size-4" /></Button>
-        <Button variant="outline" size="icon" className="size-8" aria-label="قائمة التعبئة" onClick={() => printSlip(row.original)}><Printer className="size-4" /></Button>
-        <Button variant="outline" size="icon" className="size-8" aria-label="بوليصة الشحن" onClick={() => printLabel(row.original.id)}><Truck className="size-4" /></Button>
-      </div>) },
+    { id: 'id', header: t('رقم الطلب'), cell: ({ row }) => <button className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/order/${row.original.id}`)}>{row.original.id}</button> },
+    { accessorKey: 'm', header: t('التاجر') },
+    { id: 'date', header: t('التاريخ'), cell: ({ row }) => arDate(row.original.date) },
+    { accessorKey: 'items', header: t('المنتجات'), cell: ({ row }) => row.original.items + ' ' + t('منتجات') },
+    { id: 'total', header: t('الإجمالي'), cell: ({ row }) => <b>{money(row.original.total)}</b> },
+    { id: 'ship', header: t('مسؤولية الشحن'), cell: ({ row }) => <StatusBadge value={row.original.ship} /> },
+    { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate(`/records/order/${row.original.id}`) },
+        { icon: Printer, label: 'قائمة التعبئة والتجهيز', onClick: () => printSlip(row.original) },
+        { icon: Truck, label: 'بوليصة الشحن (PDF)', onClick: () => openLabelModal(row.original.id) },
+      ]} />) },
   ]
 
   return (
@@ -104,10 +126,10 @@ export default function OrdersPage() {
         selectable
         bulkActions={(ids, clear) => (
           <>
-            <span>تم تحديد {ids.length} طلب</span>
-            <select className={selectCls} defaultValue="" aria-label="تحديث جماعي للحالة" onChange={e => { if (!e.target.value) return; setStatusMut.mutate({ ids, status: e.target.value as Order['status'] }); clear() }}>
-              <option value="">تحديث جماعي للحالة...</option>
-              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            <span>{t('تحديد الصف')}: {ids.length}</span>
+            <select className={selectCls} defaultValue="" aria-label={t('تحديث جماعي للحالة...')} onChange={e => { if (!e.target.value) return; setStatusMut.mutate({ ids, status: e.target.value as Order['status'] }); clear() }}>
+              <option value="">{t('تحديث جماعي للحالة...')}</option>
+              {STATUSES.map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
           </>
         )}
@@ -115,25 +137,58 @@ export default function OrdersPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث برقم الطلب أو التاجر أو العميل..." className="pe-9" aria-label="بحث في الطلبات" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث برقم الطلب أو التاجر أو العميل...')} className="pe-9" aria-label={t('بحث برقم الطلب أو التاجر أو العميل...')} />
             </div>
-            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label="تصفية حسب الحالة">
-              <option value="">كل الحالات</option>
-              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
+              <option value="">{t('كل الحالات')}</option>
+              {STATUSES.map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
-            <select className={selectCls} value={ship} onChange={e => { setShip(e.target.value); setPage(1) }} aria-label="تصفية حسب مسؤولية الشحن">
-              <option value="">مسؤولية الشحن: الكل</option>
-              <option value="منصة">شحن المنصة</option>
-              <option value="ذاتي">شحن ذاتي</option>
+            <select className={selectCls} value={ship} onChange={e => { setShip(e.target.value); setPage(1) }} aria-label={t('تصفية حسب مسؤولية الشحن')}>
+              <option value="">{t('مسؤولية الشحن: الكل')}</option>
+              <option value="منصة">{t('شحن المنصة')}</option>
+              <option value="ذاتي">{t('الشحن الذاتي')}</option>
             </select>
-            <select className={selectCls} value={merchant} onChange={e => { setMerchant(e.target.value); setPage(1) }} aria-label="تصفية حسب التاجر">
-              <option value="">كل التجار</option>
+            <select className={selectCls} value={merchant} onChange={e => { setMerchant(e.target.value); setPage(1) }} aria-label={t('كل التجار')}>
+              <option value="">{t('كل التجار')}</option>
               {(merchants?.rows ?? []).map(m => <option key={m.id} value={m.store}>{m.store}</option>)}
             </select>
-            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('orders', ['رقم الطلب', 'التاجر', 'التاريخ', 'الحالة', 'الإجمالي', 'مسؤولية الشحن'], (data?.rows ?? []).map(o => [o.id, o.m, o.date, o.status, o.total, o.ship])); toast.success('تم تصدير الملف بنجاح') }}>تصدير</Button>
+            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('orders', ['رقم الطلب', 'التاجر', 'التاريخ', 'الحالة', 'الإجمالي', 'مسؤولية الشحن'], (data?.rows ?? []).map(o => [o.id, o.m, o.date, o.status, o.total, o.ship])); toast.success('تم تصدير الملف بنجاح') }}>{t('تصدير')}</Button>
           </div>
         }
       />
+
+      {/* Carrier Selection Modal */}
+      <Modal
+        open={carrierModalOpen}
+        onClose={() => setCarrierModalOpen(false)}
+        title="اختيار شركة الشحن لطباعة البوليصة"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setCarrierModalOpen(false)}>إلغاء</Button>
+            <Button onClick={() => confirmPrintLabel(selectedCarrier)}>
+              <Truck className="size-4" /> إنشاء وطباعة البوليصة
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold text-muted-foreground">شركة الشحن (Carrier)</label>
+            <select
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-ring"
+              value={selectedCarrier}
+              onChange={e => setSelectedCarrier(e.target.value)}
+            >
+              {['أرامكس (Aramex)', 'سمسا إكسبريس (SMSA Express)', 'دي إتش إل (DHL Express)', 'فيديكس (FedEx)', 'سبل - البريد السعودي (SPL)', 'ناقل إكسبريس (Naqel)', 'ريد بوكس (RedBox)', 'جي آند تي إكسبريس (J&T Express)'].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            سيتم إنشاء بوليصة الشحن الرسمية متضمنة شعار واسم الناقل المختار وتفاصيل المستودع والعميل.
+          </p>
+        </div>
+      </Modal>
     </div>
   )
 }

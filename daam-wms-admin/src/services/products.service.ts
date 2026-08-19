@@ -1,4 +1,4 @@
-﻿import { db } from '@/mocks/db'
+import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
 import { todayISO } from '@/lib/utils'
@@ -7,9 +7,16 @@ const DELETED: (PlatformProduct & { deletedAt: string })[] = []
 export const productsService = {
   async list(q: ListQuery): Promise<ListResult<PlatformProduct>> {
     await delay()
-    const t = String(q.q ?? '').trim()
-    const status = q.status as string
-    const rows = db.pltProducts.filter(p => (!t || p.name.includes(t) || p.ref.includes(t)) && (!status || p.status === status))
+    const t = String(q.q ?? '').trim().toLowerCase()
+    const status = String(q.status ?? '').trim()
+    const rows = db.pltProducts.filter(p => {
+      if (t && !p.name.toLowerCase().includes(t) && !p.ref.toLowerCase().includes(t)) return false
+      if (status) {
+        if (status === 'نشط' && p.status !== 'نشط') return false
+        if ((status === 'غير نشط' || status === 'معطل') && p.status === 'نشط') return false
+      }
+      return true
+    })
     return paginate(rows, q)
   },
   async create(input: { name: string; desc: string; status: 'نشط' | 'غير نشط' }) {
@@ -51,7 +58,7 @@ export const productsService = {
   async restore(ref: string) {
     await delay(300)
     const index = DELETED.findIndex(product => product.ref === ref)
-    if (index < 0) throw new Error('Product not found')
+    if (index < 0) throw new Error('منتج المنصة غير موجود')
     const product = { ...DELETED[index] }
     delete (product as { deletedAt?: string }).deletedAt
     db.pltProducts.unshift(product)

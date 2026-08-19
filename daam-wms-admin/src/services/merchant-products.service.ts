@@ -1,16 +1,47 @@
-﻿import { db } from '@/mocks/db'
+import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
 import { todayISO } from '@/lib/utils'
 import { merchantSettingsService } from './merchant-settings.service'
 import type { ListQuery, ListResult } from '@/types'
-export interface MerchantProduct { ref: string; m: string; name: string; sku: string; desc: string; qty: number; price: number; status: 'نشط' | 'معطل'; sold: number; created: string; log: string[] }
+export interface MerchantProduct { ref: string; m: string; name: string; sku: string; desc: string; qty: number; price: number; status: 'نشط' | 'معطل' | 'غير نشط'; sold: number; created: string; log: string[]; img?: string }
 const seed = (): MerchantProduct[] => {
   const out: MerchantProduct[] = []
-  const names: [string, number][] = [['قهوة عربية مختصة 1كجم', 180], ['بن محمص كولومبي 500جم', 95], ['أكياس قهوة ورقية (50 قطعة)', 40], ['منظف أرضيات معطر 3لتر', 35], ['معقم أسطح 1لتر', 22], ['فوط مايكروفايبر (10 قطع)', 30], ['بن أخضر إثيوبي 5كجم', 260], ['أكياس تغليف حرارية (100)', 55], ['معطر جو فندقي 500مل', 28]]
-  db.merchants.slice(0, 3).forEach((m, mi) => {
-    names.slice(mi * 3, mi * 3 + 3).forEach(([n, pr], i) => {
-      out.push({ ref: 'PRD-' + String(out.length + 1).padStart(3, '0'), m: m.store, name: n, sku: 'SKU-' + (1000 + out.length * 7), desc: 'منتج أساسي ضمن كتالوج التاجر', qty: i === 1 && mi === 0 ? 0 : i === 2 ? 18 : 60 + i * 25, price: pr, status: i === 2 && mi === 1 ? 'معطل' : 'نشط', sold: 130 - i * 35 + mi * 15, created: '2025-11-0' + (i + 1), log: ['إنشاء المنتج بواسطة التاجر'] })
+  const names: [string, number, 'نشط' | 'معطل' | 'غير نشط'][] = [
+    ['قهوة عربية مختصة 1كجم', 180, 'نشط'],
+    ['بن محمص كولومبي 500جم', 95, 'معطل'],
+    ['أكياس قهوة ورقية (50 قطعة)', 40, 'نشط'],
+    ['فلاتر تقطير ورقية V60', 25, 'غير نشط'],
+    ['منظف أرضيات معطر 3لتر', 35, 'نشط'],
+    ['معقم أسطح 1لتر', 22, 'معطل'],
+    ['فوط مايكروفايبر (10 قطع)', 30, 'نشط'],
+    ['بخاخ منظف زجاج 750مل', 19, 'غير نشط'],
+    ['بن أخضر إثيوبي 5كجم', 260, 'نشط'],
+    ['أكياس تغليف حرارية (100)', 55, 'معطل'],
+    ['معطر جو فندقي 500مل', 28, 'نشط'],
+  ]
+  db.merchants.forEach((m, mi) => {
+    const storeItems = [
+      { name: 'قهوة عربية مختصة 1كجم', price: 180, status: 'نشط' as const, qty: 65 },
+      { name: 'بن محمص كولومبي 500جم', price: 95, status: 'غير نشط' as const, qty: 0 },
+      { name: 'أكياس قهوة ورقية (50 قطعة)', price: 40, status: 'نشط' as const, qty: 120 },
+      { name: 'فلاتر تقطير ورقية V60', price: 25, status: 'معطل' as const, qty: 15 },
+      { name: 'معطر جو فاخر 500مل', price: 35, status: 'نشط' as const, qty: 40 },
+    ]
+    storeItems.forEach((it, i) => {
+      out.push({
+        ref: 'PRD-' + String(out.length + 1).padStart(3, '0'),
+        m: m.store,
+        name: it.name + (mi > 0 ? ` — ${m.store}` : ''),
+        sku: 'SKU-' + (1000 + out.length * 7),
+        desc: 'منتج أساسي ضمن كتالوج التاجر في المنصة الداعمة WMS',
+        qty: it.qty,
+        price: it.price,
+        status: it.status,
+        sold: 50 + i * 20,
+        created: '2025-11-0' + ((i % 9) + 1),
+        log: ['إنشاء المنتج بواسطة التاجر'],
+      })
     })
   })
   return out
@@ -21,8 +52,16 @@ export const merchantProductsService = {
   async list(q: ListQuery & { store: string }): Promise<ListResult<MerchantProduct>> {
     await delay()
     const t = String(q.q ?? '').trim().toLowerCase()
-    const status = q.status as string
-    const rows = merchantProducts.filter(p => p.m === q.store && (!t || p.name.toLowerCase().includes(t) || p.sku.toLowerCase().includes(t)) && (!status || p.status === status))
+    const status = String(q.status ?? '').trim()
+    const rows = merchantProducts.filter(p => {
+      if (p.m !== q.store) return false
+      if (t && !p.name.toLowerCase().includes(t) && !p.sku.toLowerCase().includes(t)) return false
+      if (status) {
+        if (status === 'نشط' && p.status !== 'نشط') return false
+        if ((status === 'غير نشط' || status === 'معطل') && p.status === 'نشط') return false
+      }
+      return true
+    })
     return paginate(rows, q)
   },
   async create(store: string, input: { name: string; sku: string; desc: string; qty: number; price: number }) {
@@ -89,6 +128,24 @@ export const merchantProductsService = {
       stockByWh: [['المستودع الرئيسي', 240, 60], ['المستودع الفرعي', 140, 35], ['منطقة الطبلية', 90, 20]] as [string, number, number][],
       revenue: [12, 15, 14, 18, 16, 20, 19, 22, 21, 24, 23, 26].map(v => v * 1000),
     }
+  },
+  /** تنزيل قالب Excel/CSV لرفع المنتجات بكميات كبيرة */
+  async downloadTemplate() {
+    await delay(200)
+    const headers = ['اسم المنتج', 'رمز المنتج (SKU)', 'وصف المنتج', 'الكمية المتاحة', 'السعر', 'الطول (سم)', 'العرض (سم)', 'الارتفاع (سم)']
+    const sample = [
+      ['قهوة عربية مختصة 1كجم', 'SKU-1001', 'بن محمص طازج', '100', '180', '30', '20', '15'],
+      ['منظف أرضيات معطر 3لتر', 'SKU-1002', 'منتج تنظيف', '50', '35', '25', '15', '10'],
+    ]
+    const csv = '\uFEFF' + [headers, ...sample].map(r => r.map(c => `"${c}"`).join(',')).join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'daam-products-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+    audit('تنزيل قالب رفع المنتجات', 'منتجات التاجر')
   },
 }
 

@@ -45,42 +45,47 @@ export const db = {
 
   stockRequests: [
     { id: 'SR-1001', m: 'متجر البن الذهبي', date: '2026-02-08', type: 'إضافة', qty: 200, p: 'قهوة عربية مختصة 1كجم', wh: 'مستودع الرياض الرئيسي', status: 'معلق', notes: 'يرجى الفحص والتأكد من سلامة الأكياس المعبأة كليا من البن والتحقق من الوزن الإجمالي.', attachment: 'invoice_and_manifest_1001.pdf' },
-    { id: 'SR-1002', m: 'متجر النقاء للتنظيف', date: '2026-02-08', type: 'إضافة', qty: 500, p: 'منظف أرضيات معطر 3لتر', wh: 'مستودع جدة', status: 'معلق', notes: 'شحنة منظفات إضافية لتغطية الطلب المتزايد في المنطقة الغربية.' },
+    { id: 'SR-1002', m: 'متجر النقاء للتنظيف', date: '2026-02-08', type: 'إضافة', qty: 500, p: 'منظف أرضيات معطر 3لتر', wh: 'مستودع جدة', status: 'معتمد', notes: 'شحنة منظفات إضافية لتغطية الطلب المتزايد في المنطقة الغربية.', attachment: 'warehouse-request.xlsx' },
     { id: 'SR-1003', m: 'مؤسسة ركن القهوة', date: '2026-02-07', type: 'سحب', qty: 120, p: 'قهوة تركية فاخرة 250جم', wh: 'مستودع الرياض الرئيسي', status: 'معلق', notes: 'سحب جزئي مؤقت للتوصيل المباشر لمعرض الرياض الدولي للقهوة.' },
-    { id: 'SR-1004', m: 'متجر الجمال الحديث', date: '2026-02-06', type: 'سحب', qty: 40, p: 'لوشن عناية بالجسم', wh: 'مستودع الدمام', status: 'معلق' },
-    { id: 'SR-1005', m: 'متجر قهوة المختصين', date: '2026-02-06', type: 'إضافة', qty: 80, p: 'بن محمص كولومبي 500جم', wh: 'مستودع الرياض الرئيسي', status: 'معلق', notes: 'إضافة مخزون عاجلة مع بوليصة توريد مرفقة.', attachment: 'packing_slip_80_qty.png' },
+    { id: 'SR-1004', m: 'متجر الجمال الحديث', date: '2026-02-06', type: 'سحب', qty: 40, p: 'لوشن عناية بالجسم', wh: 'مستودع الدمام', status: 'معتمد' },
+    { id: 'SR-1005', m: 'متجر قهوة المختصين', date: '2026-02-06', type: 'إضافة', qty: 80, p: 'بن محمص كولومبي 500جم', wh: 'مستودع الرياض الرئيسي', status: 'مرفوض', notes: 'تم الرفض لعدم اكتمال شهادة مطابقة الجودة للمنتج المورد.', attachment: 'packing_slip_80_qty.png' },
+    { id: 'SR-1006', m: 'متجر أصول النظافة', date: '2026-02-05', type: 'سحب', qty: 60, p: 'معقم أسطح متعدد الاستخدام', wh: 'مستودع الدمام', status: 'مرفوض', notes: 'الكمية المطلوبة تتجاوز الرصيد المتاح حالياً للحجز.' },
   ] as StockRequest[],
 
   orders: [
-    { id: 'ORD-7001', m: 'متجر البن الذهبي', date: '2026-02-10', status: 'معلق', items: 3, total: 412.5, ship: 'منصة', cust: 'أحمد الغامدي' },
+    { id: 'ORD-7001', m: 'متجر البن الذهبي', date: '2026-02-10', status: 'معلق', items: 3, total: 412.5, ship: 'منصة', cust: 'أحمد الغامدي', notes: 'يرجى التأكد من مطابقة الكمية قبل تجهيز الطلب وإرفاق صورة التغليف.' },
     { id: 'ORD-7002', m: 'متجر النقاء للتنظيف', date: '2026-02-10', status: 'قيد المعالجة', items: 5, total: 189, ship: 'منصة', cust: 'لطيفة الحسن' },
-    { id: 'ORD-7003', m: 'مؤسسة ركن القهوة', date: '2026-02-09', status: 'مكتمل', items: 2, total: 240, ship: 'ذاتي', cust: 'سلطان الرشيد', attachments: ['waybill_7003.pdf'] },
-    { id: 'ORD-7004', m: 'متجر لمسة العناية', date: '2026-02-09', status: 'معلق', items: 1, total: 75, ship: 'منصة', cust: 'منيرة العبدالله' },
-    { id: 'ORD-7005', m: 'متجر الجمال الحديث', date: '2026-02-08', status: 'قيد المعالجة', items: 4, total: 560, ship: 'ذاتي', cust: 'جواهر السبيعي', attachments: ['shipment_label_7005.jpg', 'tracking_7005.txt'] },
+    { id: 'ORD-7003', m: 'مؤسسة ركن القهوة', date: '2026-02-09', status: 'مكتمل', items: 2, total: 240, ship: 'ذاتي', cust: 'سلطان الرشيد', notes: 'تم تسليم الشحنة للناقل الذاتي والتأكد من سلامة العبوات.', attachments: ['waybill_7003.pdf'] },
+    { id: 'ORD-7004', m: 'متجر لمسة العناية', date: '2026-02-09', status: 'معلق', items: 1, total: 75, ship: 'ذاتي', cust: 'منيرة العبدالله' },
+    { id: 'ORD-7005', m: 'متجر الجمال الحديث', date: '2026-02-08', status: 'قيد المعالجة', items: 4, total: 560, ship: 'ذاتي', cust: 'جواهر السبيعي', notes: 'تمت مراجعة بيانات الشحن، ويرجى تسليم الطلب خلال فترة العمل.', attachments: ['shipment_label_7005.jpg', 'tracking_7005.txt', 'packing-list.docx'] },
     { id: 'ORD-7006', m: 'متجر البن الذهبي', date: '2026-02-08', status: 'مكتمل', items: 6, total: 830, ship: 'منصة', cust: 'ناصر الشهراني' },
     { id: 'ORD-7007', m: 'متجر قهوة المختصين', date: '2026-02-07', status: 'ملغي', items: 2, total: 120, ship: 'منصة', cust: 'عائشة المالكي' },
-    { id: 'ORD-7008', m: 'متجر النقاء للتنظيف', date: '2026-02-07', status: 'مكتمل', items: 3, total: 95.5, ship: 'منصة', cust: 'تركي الحمد' },
+    { id: 'ORD-7008', m: 'متجر أصول النظافة', date: '2026-02-07', status: 'ملغي', items: 3, total: 95.5, ship: 'ذاتي', cust: 'تركي الحمد' },
     { id: 'ORD-7009', m: 'متجر أصول النظافة', date: '2026-02-06', status: 'معلق', items: 8, total: 1240, ship: 'ذاتي', cust: 'دانة الخالدي', attachments: ['waybill_7009.pdf', 'insurance_doc_7009.pdf'] },
     { id: 'ORD-7010', m: 'مؤسسة ركن القهوة', date: '2026-02-05', status: 'قيد المعالجة', items: 2, total: 310, ship: 'منصة', cust: 'بدر القرني' },
   ] as Order[],
 
   returns: [
     { ref: 'RET-2001', m: 'متجر البن الذهبي', email: 'abdullah@goldenbean.sa', order: 'ORD-7006', cust: 'ناصر الشهراني', count: 1, type: 'إرجاع للمخزون', date: '2026-02-09', status: 'معلق', notes: 'يرجى التحقق من سلامة المنتج قبل إعادة إدخاله للمخزون.', attachment: 'return_audit_2001.pdf' },
-    { ref: 'RET-2002', m: 'متجر النقاء للتنظيف', email: 'sara@naqaa.sa', order: 'ORD-7008', cust: 'تركي الحمد', count: 2, type: 'إرجاع للتاجر', date: '2026-02-09', status: 'معلق', notes: 'المنتجات مصنَّعة حسب الطلب، نحتاج مراجعة قبل إعادة التوريد.', attachment: 'seller_return_notes_2002.pdf' },
+    { ref: 'RET-2002', m: 'متجر النقاء للتنظيف', email: 'sara@naqaa.sa', order: 'ORD-7008', cust: 'تركي الحمد', count: 2, type: 'إرجاع للتاجر', date: '2026-02-09', status: 'معتمد', notes: 'المنتجات مصنَّعة حسب الطلب، نحتاج مراجعة قبل إعادة التوريد.', attachment: 'seller_return_notes_2002.pdf' },
     { ref: 'RET-2003', m: 'متجر الجمال الحديث', email: 'reem@modernbeauty.sa', order: 'ORD-7005', cust: 'جواهر السبيعي', count: 1, type: 'إتلاف', date: '2026-02-08', status: 'معلق', notes: 'المنتج تالف أثناء التشغيل، يُطلب إتلافه وفق الإرشادات.', attachment: 'damage_report_2003.jpg' },
     { ref: 'RET-2004', m: 'مؤسسة ركن القهوة', email: 'mohammed@rukncoffee.sa', order: 'ORD-7003', cust: 'سلطان الرشيد', count: 3, type: 'إرجاع للمخزون', date: '2026-02-06', status: 'معتمد', notes: 'تم فحص المنتجات ووضعها في دورة الاستلام.', attachment: 'return_checklist_2004.pdf' },
     { ref: 'RET-2005', m: 'متجر البن الذهبي', email: 'abdullah@goldenbean.sa', order: 'ORD-7001', cust: 'أحمد الغامدي', count: 1, type: 'إرجاع للمخزون', date: '2026-02-05', status: 'في الطريق', notes: 'المتجر قام بتغليف المنتج بطريقة مناسبة للتوصيل.', attachment: 'shipping_label_2005.pdf' },
     { ref: 'RET-2006', m: 'متجر النقاء للتنظيف', email: 'sara@naqaa.sa', order: 'ORD-7002', cust: 'لطيفة الحسن', count: 2, type: 'إرجاع للتاجر', date: '2026-02-03', status: 'مستلم', notes: 'استلام المنتج من العميل تم في نفس اليوم.', attachment: 'receive_receipt_2006.png' },
     { ref: 'RET-2007', m: 'متجر قهوة المختصين', email: 'hind@specialty.sa', order: 'ORD-7007', cust: 'عائشة المالكي', count: 1, type: 'إرجاع للمخزون', date: '2026-02-01', status: 'تم الفحص', notes: 'تقرير الفحص جاهز، المنتج مناسب للإعادة إلى المخزون.', attachment: 'inspection_report_2007.pdf' },
     { ref: 'RET-2008', m: 'متجر أصول النظافة', email: 'khaled@osool.sa', order: 'ORD-7009', cust: 'دانة الخالدي', count: 4, type: 'إرجاع للمخزون', date: '2026-01-28', status: 'تم الاسترداد', notes: 'تم إرجاع المبالغ إلى رصيد المحفظة.', attachment: 'refund_receipt_2008.pdf' },
+    { ref: 'RET-2009', m: 'متجر لمسة العناية', email: 'noura@lamsa.sa', order: 'ORD-7004', cust: 'منيرة العبدالله', count: 1, type: 'إتلاف', date: '2026-01-25', status: 'مرفوض', notes: 'تم رفض طلب الإرجاع لتجاوز المدة النظامية المسموح بها.' },
   ] as ReturnRequest[],
 
   withdrawals: [
     { id: 'WD-3001', m: 'متجر البن الذهبي', email: 'abdullah@goldenbean.sa', amount: 4500, method: 'تحويل بنكي', bank: '•••• 4321', date: '2026-02-09', status: 'معلق', notes: 'مبلغ السحب مرتبط بشحنة قهوة جديدة ومستلزمات التعبئة.', attachment: 'bank_transfer_proof_3001.pdf' },
     { id: 'WD-3002', m: 'متجر النقاء للتنظيف', email: 'sara@naqaa.sa', amount: 2150.75, method: 'تحويل بنكي', bank: '•••• 8810', date: '2026-02-09', status: 'معلق', notes: 'السحب مخصص لتجديد المخزون في جدة.', attachment: 'withdrawal_invoice_3002.pdf' },
-    { id: 'WD-3003', m: 'مؤسسة ركن القهوة', email: 'mohammed@rukncoffee.sa', amount: 7800, method: 'تحويل بنكي', bank: '•••• 1290', date: '2026-02-08', status: 'معلق', notes: 'طلب سحب عاجل لتمويل شحنة القهوة القادمة.', attachment: 'payment_request_3003.pdf' },
+    { id: 'WD-3003', m: 'مؤسسة ركن القهوة', email: 'mohammed@rukncoffee.sa', amount: 7800, method: 'تحويل بنكي', bank: '•••• 1290', date: '2026-02-08', status: 'معتمد', notes: 'طلب سحب لتمويل شحنة القهوة القادمة.', attachment: 'payment_request_3003.pdf' },
     { id: 'WD-3004', m: 'متجر الجمال الحديث', email: 'reem@modernbeauty.sa', amount: 960, method: 'رصيد المحفظة', bank: '—', date: '2026-02-07', status: 'معتمد', notes: 'تم اعتماد السحب إلى رصيد المحفظة.', attachment: 'wallet_credit_3004.pdf' },
     { id: 'WD-3005', m: 'متجر قهوة المختصين', email: 'hind@specialty.sa', amount: 3300, method: 'تحويل بنكي', bank: '•••• 5544', date: '2026-02-06', status: 'قيد التنفيذ', notes: 'التحويل قيد التنفيذ خلال اليوم التالي.', attachment: 'transfer_tracking_3005.pdf' },
+    { id: 'WD-3006', m: 'متجر البن الذهبي', email: 'abdullah@goldenbean.sa', amount: 1500, method: 'تحويل بنكي', bank: '•••• 4321', date: '2026-01-20', status: 'مكتمل', notes: 'تم تنفيذ الحوالة بنجاح إلى الحساب البنكي.' },
+    { id: 'WD-3007', m: 'متجر أصول النظافة', email: 'khaled@osool.sa', amount: 2000, method: 'تحويل بنكي', bank: '•••• 5077', date: '2026-01-18', status: 'مرفوض', notes: 'رصيد المحفظة غير كافٍ لتغطية المبلغ المطلوب.' },
+    { id: 'WD-3008', m: 'متجر انتعاش', email: 'fahad@int3ash.sa', amount: 300, method: 'رصيد المحفظة', bank: '—', date: '2026-01-15', status: 'ملغي', notes: 'تم إلغاء الطلب بواسطة التاجر.' },
   ] as Withdrawal[],
 
   wallets: [
@@ -100,6 +105,8 @@ export const db = {
     { ref: 'INV-M-202601-003', m: 'مؤسسة ركن القهوة', email: 'mohammed@rukncoffee.sa', period: 'يناير 2026', total: 4120.75, status: 'متأخرة', due: '2026-02-10', gen: '2026-02-01', sent: '2026-02-01' },
     { ref: 'INV-M-202601-004', m: 'متجر الجمال الحديث', email: 'reem@modernbeauty.sa', period: 'يناير 2026', total: 760.25, status: 'مستعرضة', due: '2026-02-15', gen: '2026-02-01', sent: '2026-02-01' },
     { ref: 'INV-M-202601-005', m: 'متجر قهوة المختصين', email: 'hind@specialty.sa', period: 'يناير 2026', total: 1450, status: 'تم الإنشاء', due: '2026-02-15', gen: '2026-02-01', sent: '—' },
+    { ref: 'INV-M-202512-006', m: 'متجر البن الذهبي', email: 'abdullah@goldenbean.sa', period: 'ديسمبر 2025', total: 2490, status: 'مدفوعة', due: '2026-01-15', gen: '2026-01-01', sent: '2026-01-01' },
+    { ref: 'INV-M-202512-007', m: 'متجر النقاء للتنظيف', email: 'sara@naqaa.sa', period: 'ديسمبر 2025', total: 1820, status: 'مرسلة', due: '2026-01-15', gen: '2026-01-01', sent: '2026-01-01' },
   ] as Invoice[],
 
   serviceTypes: [
@@ -108,18 +115,23 @@ export const db = {
     { name: 'وضع الملصقات', desc: 'طباعة ووضع الملصقات التعريفية', cost: 1.25, unit: 'لكل قطعة', prod: 'نعم', status: 'نشط', model: 'دفعة واحدة', freq: '—' },
     { name: 'تصوير المنتجات', desc: 'تصوير احترافي للمنتجات', cost: 15, unit: 'لكل منتج', prod: 'نعم', status: 'نشط', model: 'دفعة واحدة', freq: '—' },
     { name: 'إدارة الإرجاع الشاملة', desc: 'استقبال وفحص ومعالجة مرتجعات المتجر', cost: 600, unit: 'لكل طلب', prod: 'لا', status: 'نشط', model: 'متكرر', freq: 'ربع سنوي' },
+    { name: 'فحص الجودة المخبري', desc: 'إجراء تحاليل مخبرية معتمدة لشهادات الجودة للمنتجات الغذائية والطبية', cost: 1200, unit: 'لكل عينة', prod: 'نعم', status: 'غير نشط', model: 'متكرر', freq: 'سنوي' },
   ] as ServiceType[],
 
   serviceRequests: [
     { ref: 'SRV-4001', m: 'متجر البن الذهبي', email: 'abdullah@goldenbean.sa', type: 'تغليف المنتجات', prod: 'قهوة عربية', qty: 200, cost: 500, urgency: 'عادي', date: '2026-02-14', req: '2026-02-08', status: 'معلق', notes: 'يرجى تغليف القطع في أرقام مخصصة حسب الطلبات المميزة.', attachment: 'packaging_spec_4001.pdf' },
-    { ref: 'SRV-4002', m: 'متجر النقاء للتنظيف', email: 'sara@naqaa.sa', type: 'التخزين المبرد', prod: '—', qty: 1, cost: 350, urgency: 'عاجل', date: '2026-02-12', req: '2026-02-08', status: 'معلق', notes: 'الطلب يحتاج خدمة فورية بسبب زيادة الطلب في المنطقة الغربية.', attachment: 'cold_storage_request_4002.pdf' },
-    { ref: 'SRV-4003', m: 'مؤسسة ركن القهوة', email: 'mohammed@rukncoffee.sa', type: 'وضع الملصقات', prod: 'قهوة تركية', qty: 500, cost: 625, urgency: 'حرج', date: '2026-02-11', req: '2026-02-07', status: 'معلق', notes: 'مجموعة ملصقات احتياج لعرض فعلي في معرض الرياض.', attachment: 'label_placement_4003.png' },
+    { ref: 'SRV-4002', m: 'متجر النقاء للتنظيف', email: 'sara@naqaa.sa', type: 'التخزين المبرد', prod: '—', qty: 1, cost: 350, urgency: 'عاجل', date: '2026-02-12', req: '2026-02-08', status: 'معتمد', notes: 'الطلب يحتاج خدمة فورية بسبب زيادة الطلب في المنطقة الغربية.', attachment: 'cold_storage_request_4002.pdf' },
+    { ref: 'SRV-4003', m: 'مؤسسة ركن القهوة', email: 'mohammed@rukncoffee.sa', type: 'وضع الملصقات', prod: 'قهوة تركية', qty: 500, cost: 625, urgency: 'حرج', date: '2026-02-11', req: '2026-02-07', status: 'قيد التنفيذ', notes: 'مجموعة ملصقات احتياج لعرض فعلي في معرض الرياض.', attachment: 'label_placement_4003.png' },
+    { ref: 'SRV-4004', m: 'متجر الجمال الحديث', email: 'reem@modernbeauty.sa', type: 'تصوير المنتجات', prod: 'لوشن عناية', qty: 5, cost: 75, urgency: 'عادي', date: '2026-02-05', req: '2026-02-01', status: 'مكتمل', notes: 'تم إنهاء جلسة التصوير وتسليم الأصول الرقمية.' },
+    { ref: 'SRV-4005', m: 'متجر أصول النظافة', email: 'khaled@osool.sa', type: 'تغليف المنتجات', prod: 'منظف أرضيات', qty: 100, cost: 250, urgency: 'عادي', date: '2026-02-02', req: '2026-01-29', status: 'مرفوض', notes: 'تم الرفض لعدم توفر قوالب التغليف المخصصة لهذا المنتج حالياً.' },
   ] as ServiceRequest[],
 
   subscriptions: [
     { id: 'SUB-5001', m: 'متجر قهوة المختصين', type: 'إدارة الإرجاع الشاملة', cost: 600, freq: 'ربع سنوي', next: '2026-05-05', status: 'نشط', total: 600, start: '2026-02-05' },
     { id: 'SUB-5002', m: 'متجر البن الذهبي', type: 'التخزين المبرد', cost: 350, freq: 'شهري', next: '2026-03-01', status: 'نشط', total: 2100, start: '2025-09-01' },
     { id: 'SUB-5003', m: 'متجر النقاء للتنظيف', type: 'التخزين المبرد', cost: 350, freq: 'شهري', next: '2026-02-15', status: 'فشل الدفع', total: 1750, start: '2025-08-15' },
+    { id: 'SUB-5004', m: 'مؤسسة ركن القهوة', type: 'تغليف المنتجات', cost: 150, freq: 'أسبوعي', next: '—', status: 'ملغي', total: 1200, start: '2025-10-01' },
+    { id: 'SUB-5005', m: 'متجر الجمال الحديث', type: 'فحص الجودة المخبري', cost: 1200, freq: 'سنوي', next: '2027-01-15', status: 'نشط', total: 1200, start: '2026-01-15' },
   ] as Subscription[],
 
   approvals: [
@@ -128,6 +140,7 @@ export const db = {
     { id: 'APR-9003', type: 'سحب مخزون', urgency: 'عاجل', who: 'مؤسسة ركن القهوة', title: 'سحب 120 قطعة — قهوة تركية فاخرة', date: '2026-02-07', days: 3, qty: 120, sourceRef: 'SR-1003' },
     { id: 'APR-9004', type: 'طلب إرجاع', urgency: 'عادي', who: 'متجر الجمال الحديث', title: 'إرجاع RET-2003 — إتلاف منتج تالف', date: '2026-02-08', days: 2, sourceRef: 'RET-2003' },
     { id: 'APR-9005', type: 'طلب سحب مالي', urgency: 'حرج', who: 'مؤسسة ركن القهوة', title: 'سحب 7,800.00 ر.س — تحويل بنكي', date: '2026-02-08', days: 4, sourceRef: 'WD-3003' },
+    { id: 'APR-9006', type: 'طلب خدمة', urgency: 'عاجل', who: 'متجر النقاء للتنظيف', title: 'طلب خدمة تخزين مبرد — متجر النقاء', date: '2026-02-08', days: 2, sourceRef: 'SRV-4002' },
   ] as Approval[],
 
   notifEvents: [
@@ -141,13 +154,20 @@ export const db = {
     { id: 'N2', title: 'تنبيه تجاوز حد التخزين', msg: 'تجاوز متجر مؤسسة ركن القهوة حد التخزين المجاني (100%)', type: 'تحذير', icon: 'alert', color: 'orange', time: 'قبل 20 دقيقة', unread: true },
     { id: 'N3', title: 'طلب مرتجع جديد', msg: 'RET-2003 من متجر الجمال الحديث — نوع الإرجاع: إتلاف', type: 'تنبيه', icon: 'undo', color: 'blue', time: 'قبل ساعة', unread: true },
     { id: 'N4', title: 'فشل دفع اشتراك', msg: 'تعذر خصم رسوم اشتراك التخزين المبرد لمتجر النقاء للتنظيف', type: 'تحذير', icon: 'wallet', color: 'red', time: 'قبل ساعتين', unread: false },
-    { id: 'N5', title: 'اكتمال طلب خدمة', msg: 'اكتمل طلب الخدمة SRV-4006 لمتجر أصول النظافة', type: 'نجاح', icon: 'check', color: 'green', time: 'أمس', unread: false },
+    { id: 'N5', title: 'اكتمال طلب خدمة', msg: 'اكتمل طلب الخدمة SRV-4004 لمتجر الجمال الحديث', type: 'نجاح', icon: 'check', color: 'green', time: 'أمس', unread: false },
   ] as AppNotification[],
 
   logs: [
     { id: 'LOG-098', type: 'دخول', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'تسجيل دخول ناجح إلى لوحة التحكم', entity: 'المصادقة', time: '2026-02-10 08:02', ip: '10.20.4.18' },
     { id: 'LOG-097', type: 'اعتماد', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'اعتماد طلب المخزون SR-0998 (+150 قطعة)', entity: 'SR-0998', time: '2026-02-09 14:22', ip: '10.20.4.18' },
     { id: 'LOG-096', type: 'إنشاء', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'إنشاء تاجر جديد: متجر انتعاش', entity: 'M-007', time: '2026-02-01 10:11', ip: '10.20.4.18' },
+    { id: 'LOG-095', type: 'خروج', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'تسجيل خروج من النظام', entity: 'المصادقة', time: '2026-02-01 18:30', ip: '10.20.4.18' },
+    { id: 'LOG-094', type: 'تعديل', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'تحديث بيانات المتجر وحد التخزين لمتجر البن الذهبي', entity: 'M-001', time: '2026-01-29 11:45', ip: '10.20.4.18' },
+    { id: 'LOG-093', type: 'حذف', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'حذف منتج غير نشط من كتالوج المنصة', entity: 'PLT-099', time: '2026-01-28 16:10', ip: '10.20.4.18' },
+    { id: 'LOG-092', type: 'رفض', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'رفض طلب السحب WD-3007 لعدم كفاية الرصيد', entity: 'WD-3007', time: '2026-01-25 14:00', ip: '10.20.4.18' },
+    { id: 'LOG-091', type: 'تصدير', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'تصدير تقرير مبيعات وطلبات شهر يناير بصيغة CSV', entity: 'التقارير', time: '2026-01-22 09:20', ip: '10.20.4.18' },
+    { id: 'LOG-090', type: 'تنبيه أمني', actor: 'نظام المراقبة الذكي', role: 'الأمان', email: 'security@daam.sa', desc: 'رصد محاولات تسجيل دخول متكررة غير مصرح بها من IP خارجي', entity: 'جدار الحماية', time: '2026-01-20 03:15', ip: '192.168.1.99' },
+    { id: 'LOG-089', type: 'إجراء', actor: 'عبدالله السالم', role: 'مدير النظام', email: 'admin@daam.sa', desc: 'إعادة إرسال الفاتورة الشهرية INV-M-202601-001 للتاجر', entity: 'INV-M-202601-001', time: '2026-01-18 12:05', ip: '10.20.4.18' },
   ] as AuditLog[],
 
   seq: { merchant: 8, plt: 4, log: 100 },

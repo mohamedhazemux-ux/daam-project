@@ -1,6 +1,7 @@
-﻿import { db } from '@/mocks/db'
+import { db } from '@/mocks/db'
 import { delay, paginate } from './http'
 import { audit } from './audit.service'
+import { todayISO } from '@/lib/utils'
 import type { AppNotification, AuditLog, ListQuery, ListResult, NotifEvent } from '@/types'
 
 const URGENCY: Record<string, number> = { 'حرج': 0, 'عاجل': 1, 'عادي': 2 }
@@ -40,8 +41,8 @@ export const systemService = {
       orders: db.orders.length,
       pendingApprovals: db.approvals.length,
       pendingOrders: db.orders.filter(o => o.status === 'معلق').length,
-      returnsToday: db.returns.filter(r => r.date >= '2026-02-09').length,
-      revenueToday: db.orders.filter(o => o.date >= '2026-02-10').reduce((s, o) => s + o.total, 0),
+      returnsToday: db.returns.filter(r => r.date >= todayISO()).length,
+      revenueToday: db.orders.filter(o => o.date >= todayISO()).reduce((s, o) => s + o.total, 0),
       walletsTotal: db.wallets.reduce((s, w) => s + w.bal, 0),
       lowStock: db.stockLevels.filter(s => s.avail < 50).length,
       criticalServices: db.serviceRequests.filter(s => s.urgency === 'حرج' && s.status === 'معلق').length,

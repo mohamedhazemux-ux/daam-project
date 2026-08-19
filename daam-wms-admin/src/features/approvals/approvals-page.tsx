@@ -8,17 +8,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/tables/data-table'
-import { Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, Modal, StatusBadge, selectCls } from '@/components/common'
 import { approvalsService } from '@/services/approvals.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, todayISO } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import type { Approval } from '@/types'
-import { Search } from 'lucide-react'
+import { CheckCircle, Eye, HelpCircle, Search, Send, XCircle } from 'lucide-react'
 const TYPES = ['تأهيل تاجر', 'إضافة مخزون', 'سحب مخزون', 'طلب إرجاع', 'طلب سحب مالي', 'طلب خدمة']
 const CATEGORIES = ['معلومات غير كافية', 'مخالفة للسياسة', 'طلب غير صالح', 'طلب مكرر', 'تجاوز الميزانية', 'أخرى']
 const APPROVERS = ['منى المطيري', 'خالد العتيق', 'عبدالله السالم']
 const STAFF = ['سعود الفهد', 'ماجد العوفي', 'وليد حسن']
 export default function ApprovalsPage() {
+  const t = useT()
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [q, setQ] = useState(''); const [type, setType] = useState(''); const [urgency, setUrgency] = useState(''); const [page, setPage] = useState(1)
@@ -39,36 +41,36 @@ export default function ApprovalsPage() {
   const [assignFor, setAssignFor] = useState<Approval | null>(null)
   const [asForm, setAsForm] = useState({ approver: '', reason: '' })
   const [asErr, setAsErr] = useState('')
-  const approve = useMutation({ mutationFn: (v: { id: string; extra: typeof aForm }) => approvalsService.approve(v.id, v.extra), onSuccess: () => { toast.success('تمت الموافقة على الطلب بنجاح'); invalidate(); setApproving(null) } })
-  const reject = useMutation({ mutationFn: (v: { id: string; r: typeof rForm }) => approvalsService.reject(v.id, v.r), onSuccess: () => { toast.success('تم رفض الطلب بنجاح'); invalidate(); setRejecting(null) } })
-  const reqInfo = useMutation({ mutationFn: (v: { id: string; info: string; deadline: string }) => approvalsService.requestInfo(v.id, v.info, v.deadline), onSuccess: () => { toast.success('تم إرسال طلب المعلومات بنجاح'); invalidate(); setInfoFor(null) } })
-  const assign = useMutation({ mutationFn: (v: { id: string; approver: string; reason: string }) => approvalsService.assign(v.id, v.approver, v.reason), onSuccess: () => { toast.success('تم إسناد الموافقة بنجاح'); invalidate(); setAssignFor(null) } })
+  const approve = useMutation({ mutationFn: (v: { id: string; extra: typeof aForm }) => approvalsService.approve(v.id, v.extra), onSuccess: () => { toast.success('تم التحقق بنجاح: تم اعتماد الطلب بنجاح'); invalidate(); setApproving(null) } })
+  const reject = useMutation({ mutationFn: (v: { id: string; r: typeof rForm }) => approvalsService.reject(v.id, v.r), onSuccess: () => { toast.success('تم التحقق بنجاح: تم رفض الطلب بنجاح'); invalidate(); setRejecting(null) } })
+  const reqInfo = useMutation({ mutationFn: (v: { id: string; info: string; deadline: string }) => approvalsService.requestInfo(v.id, v.info, v.deadline), onSuccess: () => { toast.success('تم التحقق بنجاح: تم طلب معلومات إضافية بنجاح'); invalidate(); setInfoFor(null) } })
+  const assign = useMutation({ mutationFn: (v: { id: string; approver: string; reason: string }) => approvalsService.assign(v.id, v.approver, v.reason), onSuccess: () => { toast.success('تم التحقق بنجاح: تم إسناد الطلب للمشرف الجديد بنجاح'); invalidate(); setAssignFor(null) } })
   const cards = dash ? [
-    { l: 'إجمالي المعلقة', v: dash.total, onClick: () => { setType(''); setUrgency(''); setPage(1) } },
-    { l: 'تأهيل تجار', v: dash.onboarding, onClick: () => { setType('تأهيل تاجر'); setUrgency(''); setPage(1) } },
-    { l: 'إضافة مخزون', v: dash.stockAdd, onClick: () => { setType('إضافة مخزون'); setUrgency(''); setPage(1) } },
-    { l: 'سحب مخزون', v: dash.stockRemove, onClick: () => { setType('سحب مخزون'); setUrgency(''); setPage(1) } },
-    { l: 'مرتجعات', v: dash.returns, onClick: () => { setType('طلب إرجاع'); setUrgency(''); setPage(1) } },
-    { l: 'سحب مالي', v: dash.withdrawals, onClick: () => { setType('طلب سحب مالي'); setUrgency(''); setPage(1) } },
-    { l: 'خدمات', v: dash.services, onClick: () => { setType('طلب خدمة'); setUrgency(''); setPage(1) } },
-    { l: 'حرجة / عاجلة', v: dash.critical, onClick: () => { setType(''); setUrgency('critical'); setPage(1) }, hot: true },
+    { l: t('الكل'), v: dash.total, onClick: () => { setType(''); setUrgency(''); setPage(1) } },
+    { l: t('تأهيل تاجر'), v: dash.onboarding, onClick: () => { setType('تأهيل تاجر'); setUrgency(''); setPage(1) } },
+    { l: t('إضافة مخزون'), v: dash.stockAdd, onClick: () => { setType('إضافة مخزون'); setUrgency(''); setPage(1) } },
+    { l: t('سحب مخزون'), v: dash.stockRemove, onClick: () => { setType('سحب مخزون'); setUrgency(''); setPage(1) } },
+    { l: t('المرتجعات'), v: dash.returns, onClick: () => { setType('طلب إرجاع'); setUrgency(''); setPage(1) } },
+    { l: t('طلبات السحب'), v: dash.withdrawals, onClick: () => { setType('طلب سحب مالي'); setUrgency(''); setPage(1) } },
+    { l: t('الخدمات'), v: dash.services, onClick: () => { setType('طلب خدمة'); setUrgency(''); setPage(1) } },
+    { l: t('حرج'), v: dash.critical, onClick: () => { setType(''); setUrgency('critical'); setPage(1) }, hot: true },
   ] : []
   const columns: ColumnDef<Approval, unknown>[] = [
-    { accessorKey: 'id', header: 'المعرف', cell: ({ row }) => <b>{row.original.id}</b> },
-    { id: 'type', header: 'النوع', cell: ({ row }) => <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">{row.original.type}</span> },
-    { accessorKey: 'who', header: 'مقدم الطلب' },
-    { accessorKey: 'title', header: 'الوصف', cell: ({ row }) => <span className="block max-w-[260px] truncate">{row.original.title}</span> },
-    { id: 'urgency', header: 'الإلحاح', cell: ({ row }) => <StatusBadge value={row.original.urgency} /> },
-    { id: 'date', header: 'تاريخ الطلب', cell: ({ row }) => arDate(row.original.date) },
-    { id: 'days', header: 'أيام التعليق', cell: ({ row }) => <span className={row.original.days > 3 ? 'font-black text-destructive' : 'font-bold'}>{row.original.days} {row.original.days > 3 && '⚠'}</span> },
-    { id: 'actions', header: 'إجراءات', cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => navigate('/records/approval/' + row.original.id)}>عرض التفاصيل</Button>
-        <Button size="sm" variant="outline" onClick={() => { setApproving(row.original); setAForm({ notes: '', qty: row.original.qty ?? 0, cost: 0, date: todayISO(), staff: '' }); setAErr('') }}>اعتماد</Button>
-        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(row.original); setRForm({ reason: '', category: '', resubmit: 'نعم' }); setRErr('') }}>رفض</Button>
-        <Button size="sm" variant="outline" onClick={() => { setInfoFor(row.original); setIForm({ info: '', deadline: '' }); setIErr('') }}>معلومات</Button>
-        <Button size="sm" variant="outline" onClick={() => { setAssignFor(row.original); setAsForm({ approver: '', reason: '' }); setAsErr('') }}>إسناد</Button>
-      </div>) },
+    { accessorKey: 'id', header: t('المعرف'), cell: ({ row }) => <b>{row.original.id}</b> },
+    { id: 'type', header: t('النوع'), cell: ({ row }) => <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">{row.original.type}</span> },
+    { accessorKey: 'who', header: t('مقدم الطلب') },
+    { accessorKey: 'title', header: t('الوصف'), cell: ({ row }) => <span className="block max-w-[260px] truncate">{row.original.title}</span> },
+    { id: 'urgency', header: t('الإلحاح'), cell: ({ row }) => <StatusBadge value={row.original.urgency} /> },
+    { id: 'date', header: t('التاريخ'), cell: ({ row }) => arDate(row.original.date) },
+    { id: 'days', header: t('أيام التعليق'), cell: ({ row }) => <span className={row.original.days > 3 ? 'font-black text-destructive' : 'font-bold'}>{row.original.days} {row.original.days > 3 && '⚠'}</span> },
+    { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate('/records/approval/' + row.original.id) },
+        { icon: CheckCircle, label: 'اعتماد الطلب', onClick: () => { setApproving(row.original); setAForm({ notes: '', qty: row.original.qty ?? 0, cost: 0, date: todayISO(), staff: '' }); setAErr('') } },
+        { icon: XCircle, label: 'رفض الطلب', variant: 'destructive', onClick: () => { setRejecting(row.original); setRForm({ reason: '', category: '', resubmit: 'نعم' }); setRErr('') } },
+        { icon: HelpCircle, label: 'طلب معلومات إضافية', onClick: () => { setInfoFor(row.original); setIForm({ info: '', deadline: '' }); setIErr('') } },
+        { icon: Send, label: 'إسناد لمشرف آخر', onClick: () => { setAssignFor(row.original); setAsForm({ approver: '', reason: '' }); setAsErr('') } },
+      ]} />) },
   ]
   return (
     <div className="space-y-4">
@@ -86,18 +88,17 @@ export default function ApprovalsPage() {
             <div className="flex flex-wrap items-center gap-2 border-b p-3">
               <div className="relative min-w-[220px] flex-1 md:max-w-xs">
                 <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث بالمعرف أو النوع أو مقدم الطلب..." className="pe-9" aria-label="بحث في الموافقات" />
+                <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث بالمعرف أو النوع أو مقدم الطلب...')} className="pe-9" aria-label={t('بحث بالمعرف أو النوع أو مقدم الطلب...')} />
               </div>
-              <select className={selectCls} value={type} onChange={e => { setType(e.target.value); setPage(1) }} aria-label="تصفية حسب النوع">
-                <option value="">كل الأنواع</option>
-                {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              <select className={selectCls} value={type} onChange={e => { setType(e.target.value); setPage(1) }} aria-label={t('تصفية حسب النوع')}>
+                <option value="">{t('كل الأنواع')}</option>
+                {TYPES.map(tOpt => <option key={tOpt} value={tOpt}>{t(tOpt)}</option>)}
               </select>
-              <select className={selectCls} value={urgency} onChange={e => { setUrgency(e.target.value); setPage(1) }} aria-label="تصفية حسب الإلحاح">
-                <option value="">كل مستويات الإلحاح</option>
-                <option value="critical">حرجة / عاجلة</option>
-                {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{u}</option>)}
+              <select className={selectCls} value={urgency} onChange={e => { setUrgency(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الإلحاح')}>
+                <option value="">{t('كل مستويات الإلحاح')}</option>
+                {['عادي', 'عاجل', 'حرج'].map(u => <option key={u} value={u}>{t(u)}</option>)}
               </select>
-              <p className="ms-auto text-xs font-semibold text-muted-foreground">الفرز: الإلحاح ثم الأقدم — الأحمر = معلق أكثر من 3 أيام</p>
+              <p className="ms-auto text-xs font-semibold text-muted-foreground">{t('الفرز: الإلحاح ثم الأقدم — الأحمر = معلق أكثر من 3 أيام')}</p>
             </div>
           } />
       </div>

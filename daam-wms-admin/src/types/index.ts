@@ -3,10 +3,10 @@ export type EntityStatus = 'نشط' | 'موقوف' | 'مجمّد'
 export type Urgency = 'عادي' | 'عاجل' | 'حرج'
 export interface Admin { id: string; name: string; email: string; pwd: string; role: string; dept: string; phone: string; gender: 'ذكر' | 'أنثى' }
 export interface Merchant { id: string; store: string; first: string; last: string; email: string; phone: string; status: EntityStatus; join: JoinStatus; created: string; gender: 'ذكر' | 'أنثى'; bank: string; iban: string; natId: string; natAddr: string; limit: number; used: number; unit: string; notes?: string; attachments?: string[] }
-export interface PlatformProduct { ref: string; name: string; desc: string; status: 'نشط' | 'غير نشط'; created: string; linked: boolean; length?: number; width?: number; height?: number; volume?: number }
-export interface StockRequest { id: string; m: string; date: string; type: 'إضافة' | 'سحب'; qty: number; p: string; wh: string; status: 'معلق' | 'معتمد' | 'مرفوض'; notes?: string; attachment?: string }
+export interface PlatformProduct { ref: string; name: string; desc: string; status: 'نشط' | 'غير نشط'; created: string; linked: boolean; img?: string; length?: number; width?: number; height?: number; volume?: number }
+export interface StockRequest { id: string; m: string; date: string; type: 'إضافة' | 'سحب'; qty: number; p: string; wh: string; status: 'معلق' | 'معتمد' | 'مرفوض' | 'ملغي'; notes?: string; attachment?: string }
 export interface StockLevel { p: string; sku: string; wh: string; avail: number; res: number }
-export interface Order { id: string; m: string; date: string; status: 'معلق' | 'قيد المعالجة' | 'مكتمل' | 'ملغي' | 'جاري الشحن' | 'ارجاع'; items: number; total: number; ship: 'منصة' | 'ذاتي'; cust: string; attachments?: string[] }
+export interface Order { id: string; m: string; date: string; status: 'معلق' | 'قيد المعالجة' | 'مكتمل' | 'ملغي' | 'جاري الشحن' | 'ارجاع'; items: number; total: number; ship: 'منصة' | 'ذاتي'; cust: string; notes?: string; attachments?: string[] }
 export interface ReturnRequest { ref: string; m: string; email: string; order: string; cust: string; count: number; type: string; date: string; status: string; reason?: string; notes?: string; attachment?: string }
 export interface Withdrawal { id: string; m: string; email: string; amount: number; method: string; bank: string; date: string; status: string; notes?: string; attachment?: string }
 export interface Wallet { m: string; email: string; bal: number; res: number; credits: number; debits: number; last: string; status: EntityStatus }

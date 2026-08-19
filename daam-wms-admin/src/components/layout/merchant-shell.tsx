@@ -7,12 +7,34 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { NotificationsPopover } from './notifications-popover'
+import { Breadcrumbs } from './breadcrumbs'
 import { audit } from '@/services/audit.service'
 import { cn, initials } from '@/lib/utils'
 import { BrandLogo } from '@/components/brand-logo'
 import { useT } from '@/lib/i18n'
 import { LayoutDashboard, ShoppingCart, Package, Layers, Undo2, Wallet, Wrench, Bell, Menu, LogOut, User, BarChart3, Settings, type LucideIcon } from 'lucide-react'
 const TITLES: Record<string, string> = { '/merchant': 'لوحة التحكم', '/merchant/orders': 'الطلبات', '/merchant/products': 'المنتجات', '/merchant/inventory': 'المخزون', '/merchant/returns': 'المرتجعات', '/merchant/wallet': 'المحفظة والمالية', '/merchant/services': 'طلبات الخدمة', '/merchant/notifications': 'مركز الإشعارات', '/merchant/profile': 'الملف الشخصي', '/merchant/reports': 'التقارير والتحليلات', '/merchant/settings': 'الإعدادات' }
+
+export const MERCHANT_RECORD_KIND_TO_NAV: Record<string, string> = {
+  order: '/merchant/orders',
+  product: '/merchant/products',
+  return: '/merchant/returns',
+  'stock-request': '/merchant/inventory',
+  'service-request': '/merchant/services',
+  withdrawal: '/merchant/wallet',
+  invoice: '/merchant/wallet',
+}
+
+export const MERCHANT_RECORD_KIND_TITLES: Record<string, string> = {
+  order: 'تفاصيل الطلب',
+  product: 'تفاصيل المنتج',
+  return: 'تفاصيل المرتجع',
+  'stock-request': 'تفاصيل طلب المخزون',
+  'service-request': 'تفاصيل طلب الخدمة',
+  withdrawal: 'تفاصيل طلب السحب',
+  invoice: 'تفاصيل الفاتورة',
+}
+
 const NAV: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/merchant', label: 'لوحة التحكم', icon: LayoutDashboard },
   { to: '/merchant/orders', label: 'الطلبات', icon: ShoppingCart },
@@ -25,18 +47,41 @@ const NAV: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/merchant/reports', label: 'التقارير والتحليلات', icon: BarChart3 },
   { to: '/merchant/settings', label: 'الإعدادات', icon: Settings },
 ]
+export function isMerchantNavActive(pathname: string, targetTo: string): boolean {
+  if (targetTo === '/merchant') return pathname === '/merchant'
+  if (pathname === targetTo || pathname.startsWith(targetTo + '/')) return true
+  if (pathname.startsWith('/merchant/records/')) {
+    const kind = pathname.split('/')[3]
+    return MERCHANT_RECORD_KIND_TO_NAV[kind] === targetTo
+  }
+  return false
+}
+
 function SidebarContent() {
   const t = useT()
+  const location = useLocation()
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b px-5 py-4"><BrandLogo /></div>
+      <div className="flex h-20 items-center border-b px-5"><BrandLogo /></div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="تنقل بوابة التاجر">
-        {NAV.map(it => (
-          <NavLink key={it.to} to={it.to} end={it.to === '/merchant'} className={({ isActive }) => cn('mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-bold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground', isActive && 'bg-foreground text-background hover:bg-foreground hover:text-background')}>
-            <it.icon className="size-[18px] shrink-0" aria-hidden />
-            <span className="flex-1">{t(it.label)}</span>
-          </NavLink>
-        ))}
+        {NAV.map(it => {
+          const active = isMerchantNavActive(location.pathname, it.to)
+          return (
+            <NavLink
+              key={it.to}
+              to={it.to}
+              className={cn(
+                'mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors',
+                active
+                  ? 'bg-foreground text-background hover:bg-foreground hover:text-background'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              )}
+            >
+              <it.icon className="size-[18px] shrink-0" aria-hidden />
+              <span className="flex-1">{t(it.label)}</span>
+            </NavLink>
+          )
+        })}
       </nav>
       <div className="border-t px-4 py-3 text-[11px] font-bold text-muted-foreground">{t('بوابة التجار')} — {t('الإصدار')} 2.0</div>
     </div>
@@ -51,7 +96,15 @@ export function MerchantShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const t = useT()
   const lang = usePrefsStore(s => s.lang)
-  const title = TITLES[location.pathname] ?? 'لوحة التحكم'
+  const getPageTitle = (pathname: string): string => {
+    if (TITLES[pathname]) return TITLES[pathname]
+    if (pathname.startsWith('/merchant/records/')) {
+      const kind = pathname.split('/')[3]
+      return MERCHANT_RECORD_KIND_TITLES[kind] ?? 'تفاصيل السجل'
+    }
+    return 'لوحة التحكم'
+  }
+  const title = getPageTitle(location.pathname)
   const sheetSide = lang === 'ar' ? 'right' : 'left'
   return (
     <div className="flex min-h-screen">
@@ -60,11 +113,13 @@ export function MerchantShell() {
         <SheetContent side={sheetSide} className="w-[280px] p-0"><SidebarContent /></SheetContent>
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-20 items-center gap-3 border-b bg-card px-4 lg:px-6">
           <Button variant="outline" size="icon" className="lg:hidden" onClick={toggleSidebar} aria-label={t('فتح القائمة')}><Menu className="size-4" /></Button>
           <div className="min-w-0">
             <h1 className="truncate text-[15px] font-extrabold">{t(title)}</h1>
-            <p className="hidden text-[11px] font-semibold text-muted-foreground sm:block">{user?.store} / {t(title)}</p>
+            <div className="hidden sm:block">
+              <Breadcrumbs portal="merchant" />
+            </div>
           </div>
           <div className="ms-auto flex items-center gap-2">
             <NotificationsPopover />

@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/tables/data-table'
-import { ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
+import { ActionButtons, ConfirmDialog, Modal, StatusBadge, selectCls } from '@/components/common'
 import { inventoryService } from '@/services/inventory.service'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { arDate, downloadCSV } from '@/lib/utils'
 import type { Merchant, StockLevel, StockRequest } from '@/types'
-import { Search } from 'lucide-react'
+import { CheckCircle, Eye, Search, XCircle } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
 /* ---------- طلبات المخزون المعلقة ---------- */
@@ -46,11 +46,11 @@ export function StockRequestsPage() {
     { id: 'type', header: t('النوع'), cell: ({ row }) => <StatusBadge value={row.original.type} /> },
     { id: 'date', header: t('تاريخ الطلب'), cell: ({ row }) => arDate(row.original.date) },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
-      <div className="flex gap-1">
-        <Button size="sm" variant="outline" onClick={() => navigate(`/records/stock-request/${row.original.id}`)}>{t('عرض')}</Button>
-        <Button size="sm" variant="outline" onClick={() => setApproving(row.original.id)}>{t('اعتماد')}</Button>
-        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => { setRejecting(row.original.id); setReason(''); setRErr('') }}>{t('رفض')}</Button>
-      </div>) },
+      <ActionButtons actions={[
+        { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate(`/records/stock-request/${row.original.id}`) },
+        { icon: CheckCircle, label: 'اعتماد الطلب', onClick: () => setApproving(row.original.id) },
+        { icon: XCircle, label: 'رفض الطلب', variant: 'destructive', onClick: () => { setRejecting(row.original.id); setReason(''); setRErr('') } },
+      ]} />) },
   ]
 
   return (
@@ -60,14 +60,14 @@ export function StockRequestsPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث برقم الطلب أو اسم التاجر..." className="pe-9" aria-label="بحث في طلبات المخزون" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث برقم الطلب أو اسم التاجر...')} className="pe-9" aria-label={t('بحث في طلبات المخزون')} />
             </div>
-            <select className={selectCls} value={type} onChange={e => { setType(e.target.value); setPage(1) }} aria-label="تصفية حسب النوع">
-              <option value="">كل الأنواع</option>
-              <option value="إضافة">إضافة</option>
-              <option value="سحب">سحب</option>
+            <select className={selectCls} value={type} onChange={e => { setType(e.target.value); setPage(1) }} aria-label={t('تصفية حسب النوع')}>
+              <option value="">{t('كل الأنواع')}</option>
+              <option value="إضافة">{t('إضافة')}</option>
+              <option value="سحب">{t('سحب')}</option>
             </select>
-            <span className="ms-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">{data?.total ?? 0} طلب معلق</span>
+            <span className="ms-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">{data?.total ?? 0} {t('طلب معلق')}</span>
           </div>
         } />
 
@@ -97,6 +97,7 @@ export function StockRequestsPage() {
 /* ---------- مستويات المخزون ---------- */
 export function StockLevelsPage() {
   const qc = useQueryClient()
+  const t = useT()
   const [q, setQ] = useState('')
   const [wh, setWh] = useState('')
   const [page, setPage] = useState(1)
@@ -109,22 +110,20 @@ export function StockLevelsPage() {
   const [form, setForm] = useState({ p: '', wh: '', to: '', type: 'زيادة', qty: 1, reason: '' })
   const [fErr, setFErr] = useState('')
 
-  const openModal = (m: 'adjust' | 'transfer' | 'audit') => {
-    setForm(f => ({ ...f, p: f.p || opts?.products[0] || '', wh: f.wh || opts?.warehouses[0] || '', to: f.to || opts?.warehouses[1] || '' }))
-    setFErr('')
+  const openModal = (m: '' | 'adjust' | 'transfer' | 'audit') => {
     setModal(m)
+    setForm({ p: opts?.products[0] ?? '', wh: opts?.warehouses[0] ?? '', to: opts?.warehouses[1] ?? '', type: 'زيادة', qty: 1, reason: '' })
+    setFErr('')
   }
 
   const run = useMutation({
     mutationFn: async () => {
-      if (modal === 'adjust') return inventoryService.adjust(form.p, form.wh, form.type, form.qty, form.reason)
-      if (modal === 'transfer') return inventoryService.transfer(form.p, form.wh, form.to, form.qty)
-      return inventoryService.count(form.p, form.wh, form.qty)
+      if (modal === 'adjust') { await inventoryService.adjust(form.p, form.wh, form.type, form.qty, form.reason); return }
+      if (modal === 'transfer') { await inventoryService.transfer(form.p, form.wh, form.to, form.qty); return }
+      if (modal === 'audit') { await inventoryService.count(form.p, form.wh, form.qty); return }
     },
-    onSuccess: diff => {
-      if (modal === 'adjust') toast.success('تم تعديل المخزون بنجاح')
-      else if (modal === 'transfer') toast.success('تم نقل المخزون بنجاح')
-      else toast.success('تم الانتهاء من الجرد بنجاح' + (typeof diff === 'number' && diff !== 0 ? ' — تم اكتشاف فرق (' + diff + ') وتسوية المخزون' : ''))
+    onSuccess: () => {
+      toast.success(modal === 'adjust' ? 'تم تسجيل تسوية المخزون بنجاح' : modal === 'transfer' ? 'تم تسجيل نقل المخزون بنجاح' : 'تم تسجيل نتيجة جرد المخزون بنجاح')
       qc.invalidateQueries({ queryKey: ['stock-levels'] })
       setModal('')
     },
@@ -140,13 +139,13 @@ export function StockLevelsPage() {
   }
 
   const columns: ColumnDef<StockLevel, unknown>[] = [
-    { accessorKey: 'p', header: 'المنتج', cell: ({ row }) => <b>{row.original.p}</b> },
-    { accessorKey: 'sku', header: 'رمز المنتج (SKU)', cell: ({ row }) => <span dir="ltr">{row.original.sku}</span> },
-    { accessorKey: 'wh', header: 'المستودع' },
-    { accessorKey: 'avail', header: 'الكمية المتاحة', cell: ({ row }) => <b>{row.original.avail}</b> },
-    { accessorKey: 'res', header: 'الكمية المحجوزة' },
-    { id: 'total', header: 'الإجمالي', cell: ({ row }) => row.original.avail + row.original.res },
-    { id: 'state', header: 'الحالة', cell: ({ row }) => <StatusBadge value={row.original.avail < 25 ? 'حرج' : row.original.avail < 50 ? 'تحذير' : 'اعتيادي'} /> },
+    { accessorKey: 'p', header: t('المنتج'), cell: ({ row }) => <b>{row.original.p}</b> },
+    { accessorKey: 'sku', header: t('رمز المنتج (SKU)'), cell: ({ row }) => <span dir="ltr">{row.original.sku}</span> },
+    { accessorKey: 'wh', header: t('المستودع') },
+    { accessorKey: 'avail', header: t('الكمية المتاحة'), cell: ({ row }) => <b>{row.original.avail}</b> },
+    { accessorKey: 'res', header: t('الكمية المحجوزة') },
+    { id: 'total', header: t('الإجمالي'), cell: ({ row }) => row.original.avail + row.original.res },
+    { id: 'state', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={row.original.avail < 25 ? 'حرج' : row.original.avail < 50 ? 'تحذير' : 'اعتيادي'} /> },
   ]
 
   return (
@@ -156,17 +155,17 @@ export function StockLevelsPage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث باسم المنتج أو SKU..." className="pe-9" aria-label="بحث في مستويات المخزون" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث باسم المنتج أو SKU...')} className="pe-9" aria-label={t('بحث في مستويات المخزون')} />
             </div>
-            <select className={selectCls} value={wh} onChange={e => { setWh(e.target.value); setPage(1) }} aria-label="تصفية حسب المستودع">
-              <option value="">كل المستودعات</option>
+            <select className={selectCls} value={wh} onChange={e => { setWh(e.target.value); setPage(1) }} aria-label={t('تصفية حسب المستودع')}>
+              <option value="">{t('كل المستودعات')}</option>
               {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{w}</option>)}
             </select>
             <div className="ms-auto flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => openModal('adjust')}>تسوية مخزون</Button>
-              <Button variant="outline" size="sm" onClick={() => openModal('transfer')}>نقل مخزون</Button>
-              <Button variant="outline" size="sm" onClick={() => openModal('audit')}>بدء جرد</Button>
-              <Button variant="outline" size="sm" onClick={() => { downloadCSV('stock-levels', ['المنتج', 'SKU', 'المستودع', 'متاح', 'محجوز', 'إجمالي'], (data?.rows ?? []).map(s => [s.p, s.sku, s.wh, s.avail, s.res, s.avail + s.res])); toast.success('تم تصدير الملف بنجاح') }}>تصدير</Button>
+              <Button variant="outline" size="sm" onClick={() => openModal('adjust')}>{t('تسوية المخزون')}</Button>
+              <Button variant="outline" size="sm" onClick={() => openModal('transfer')}>{t('نقل المخزون بين المواقع')}</Button>
+              <Button variant="outline" size="sm" onClick={() => openModal('audit')}>{t('بدء جرد المخزون')}</Button>
+              <Button variant="outline" size="sm" onClick={() => { downloadCSV('stock-levels', ['المنتج', 'SKU', 'المستودع', 'متاح', 'محجوز', 'إجمالي'], (data?.rows ?? []).map(s => [s.p, s.sku, s.wh, s.avail, s.res, s.avail + s.res])); toast.success('تم تصدير الملف بنجاح') }}>{t('تصدير')}</Button>
             </div>
           </div>
         } />
@@ -222,6 +221,7 @@ export function StockLevelsPage() {
 
 /* ---------- استخدام التخزين حسب التاجر (CR-003) ---------- */
 export function StorageUsagePage() {
+  const t = useT()
   const [q, setQ] = useState('')
   const [st, setSt] = useState('')
   const [page, setPage] = useState(1)
@@ -230,19 +230,19 @@ export function StorageUsagePage() {
   const { data, isLoading } = useQuery({ queryKey: ['storage-usage', qp], queryFn: () => inventoryService.usage(qp) })
 
   const columns: ColumnDef<Merchant & { pct: number; st: string }, unknown>[] = [
-    { accessorKey: 'store', header: 'التاجر', cell: ({ row }) => <b>{row.original.store}</b> },
-    { accessorKey: 'email', header: 'البريد الإلكتروني' },
-    { id: 'limit', header: 'حد التخزين المجاني', cell: ({ row }) => row.original.limit + ' ' + row.original.unit },
-    { id: 'used', header: 'المستخدم حاليًا', cell: ({ row }) => row.original.used + ' ' + row.original.unit },
-    { id: 'pct', header: 'نسبة الاستخدام', cell: ({ row }) => (
+    { accessorKey: 'store', header: t('التاجر'), cell: ({ row }) => <b>{row.original.store}</b> },
+    { accessorKey: 'email', header: t('البريد الإلكتروني') },
+    { id: 'limit', header: t('حد التخزين المجاني'), cell: ({ row }) => row.original.limit + ' ' + row.original.unit },
+    { id: 'used', header: t('المستخدم حاليًا'), cell: ({ row }) => row.original.used + ' ' + row.original.unit },
+    { id: 'pct', header: t('نسبة الاستخدام'), cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <div className={'flex h-2 w-24 overflow-hidden rounded-full bg-muted'}>
           <div className={'h-full ' + (row.original.st === 'متجاوز' ? 'bg-destructive' : row.original.st === 'تحذير' ? 'bg-warning' : 'bg-foreground')} style={{ width: Math.min(100, row.original.pct) + '%' }} />
         </div>
         <b>{row.original.pct}%</b>
       </div>) },
-    { id: 'remaining', header: 'المتبقي', cell: ({ row }) => Math.max(0, row.original.limit - row.original.used) + ' ' + row.original.unit },
-    { id: 'st', header: 'حالة الحد', cell: ({ row }) => <StatusBadge value={row.original.st} /> },
+    { id: 'remaining', header: t('المتبقي'), cell: ({ row }) => Math.max(0, row.original.limit - row.original.used) + ' ' + row.original.unit },
+    { id: 'st', header: t('حالة الحد'), cell: ({ row }) => <StatusBadge value={row.original.st} /> },
   ]
 
   return (
@@ -253,15 +253,15 @@ export function StorageUsagePage() {
           <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-xs">
               <Search className="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder="بحث باسم التاجر أو بريده..." className="pe-9" aria-label="بحث في استخدام التخزين" />
+              <Input value={q} onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={t('بحث باسم التاجر أو بريده...')} className="pe-9" aria-label={t('بحث في استخدام التخزين')} />
             </div>
-            <select className={selectCls} value={st} onChange={e => { setSt(e.target.value); setPage(1) }} aria-label="تصفية حسب حالة الحد">
-              <option value="">كل الحالات</option>
-              <option value="اعتيادي">اعتيادي</option>
-              <option value="تحذير">تحذير</option>
-              <option value="متجاوز">متجاوز</option>
+            <select className={selectCls} value={st} onChange={e => { setSt(e.target.value); setPage(1) }} aria-label={t('تصفية حسب حالة الحد')}>
+              <option value="">{t('كل الحالات')}</option>
+              <option value="اعتيادي">{t('اعتيادي')}</option>
+              <option value="تحذير">{t('تحذير')}</option>
+              <option value="متجاوز">{t('متجاوز')}</option>
             </select>
-            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('storage-usage', ['التاجر', 'الحد', 'المستخدم', 'النسبة', 'المتبقي', 'الحالة'], (data?.rows ?? []).map(r => [r.store, r.limit + ' ' + r.unit, r.used + ' ' + r.unit, r.pct + '%', Math.max(0, r.limit - r.used) + ' ' + r.unit, r.st])); toast.success('تم تصدير الملف بنجاح') }}>تصدير</Button>
+            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('storage-usage', ['التاجر', 'الحد', 'المستخدم', 'النسبة', 'المتبقي', 'الحالة'], (data?.rows ?? []).map(r => [r.store, r.limit + ' ' + r.unit, r.used + ' ' + r.unit, r.pct + '%', Math.max(0, r.limit - r.used) + ' ' + r.unit, r.st])); toast.success('تم تصدير الملف بنجاح') }}>{t('تصدير')}</Button>
           </div>
         } />
     </div>

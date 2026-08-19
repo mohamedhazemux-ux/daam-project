@@ -1,11 +1,11 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Modal, selectCls } from '@/components/common'
+import { FileUploadWithPreview, Modal, selectCls } from '@/components/common'
 import { useAuthStore } from '@/store/auth-store'
 import { adminService } from '@/services/admin.service'
 import { initials } from '@/lib/utils'
@@ -15,6 +15,7 @@ export default function ProfilePage() {
   const setUser = useAuthStore(s => s.setUser)
   const [editOpen, setEditOpen] = useState(false)
   const [pwdOpen, setPwdOpen] = useState(false)
+  const [avatar, setAvatar] = useState<string[]>([])
   const [form, setForm] = useState({ name: user?.name ?? '', phone: user?.phone ?? '', dept: user?.dept ?? 'تقنية المعلومات', gender: user?.gender ?? 'ذكر' })
   const [eErr, setEErr] = useState('')
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' })
@@ -68,7 +69,16 @@ export default function ProfilePage() {
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="تعديل الملف الشخصي"
         footer={<><Button variant="outline" onClick={() => setEditOpen(false)}>إلغاء</Button><Button onClick={saveProfile}>حفظ التغييرات</Button></>}>
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="md:col-span-2"><Label>الصورة الشخصية (JPG/PNG/JPEG حتى 5MB)</Label><Input type="file" accept=".jpg,.png,.jpeg" onChange={e => onImage(e.target.files?.[0] ?? null)} /></div>
+          <div className="md:col-span-2">
+            <FileUploadWithPreview
+              label="الصورة الشخصية (JPG/PNG/JPEG حتى 5MB)"
+              files={avatar}
+              accept=".jpg,.png,.jpeg,.webp"
+              single
+              maxSizeMB={5}
+              onChange={setAvatar}
+            />
+          </div>
           <div><Label>الاسم الكامل (3 – 50 حرفًا) <span className="text-destructive">*</span></Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
           <div><Label>رقم الجوال (11 رقمًا) <span className="text-destructive">*</span></Label><Input dir="ltr" maxLength={11} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
           <div><Label>القسم <span className="text-destructive">*</span></Label>
