@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "daam-wms-admin/dist",
   "rewrites": [
     {
       "source": "/(.*)",
