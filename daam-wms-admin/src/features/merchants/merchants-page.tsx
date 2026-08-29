@@ -36,16 +36,16 @@ export default function MerchantsPage() {
   const [deleting, setDeleting] = useState<Merchant | null>(null)
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['merchants'] })
-  const toggleStatus = useMutation({ mutationFn: (id: string) => merchantService.setStatus(id), onSuccess: () => { toast.success('تم تغيير حالة التاجر بنجاح'); invalidate() } })
-  const removeMut = useMutation({ mutationFn: (id: string) => merchantService.remove(id), onSuccess: () => { toast.success('تم حذف التاجر بنجاح'); invalidate(); setDeleting(null) } })
+  const toggleStatus = useMutation({ mutationFn: (id: string) => merchantService.setStatus(id), onSuccess: () => { toast.success(t('تم تغيير حالة التاجر بنجاح')); invalidate() } })
+  const removeMut = useMutation({ mutationFn: (id: string) => merchantService.remove(id), onSuccess: () => { toast.success(t('تم حذف التاجر بنجاح')); invalidate(); setDeleting(null) } })
 
   const columns: ColumnDef<Merchant, unknown>[] = [
     { id: 'name', header: t('التاجر'), cell: ({ row }) => (
       <div className="flex items-center gap-2.5">
         <Avatar className="size-8 rounded-md"><AvatarFallback className="rounded-md bg-foreground text-xs font-extrabold text-background">{initials(row.original.first + ' ' + row.original.last)}</AvatarFallback></Avatar>
-        <div><button className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/merchant/${row.original.id}`)}>{row.original.first} {row.original.last}</button><p className="text-[11px] font-semibold text-muted-foreground">{row.original.id}</p></div>
+        <div><button className="font-bold underline-offset-4 hover:underline" onClick={() => navigate(`/records/merchant/${row.original.id}`)}>{t(row.original.first)} {t(row.original.last)}</button><p className="text-[11px] font-semibold text-muted-foreground">{row.original.id}</p></div>
       </div>) },
-    { accessorKey: 'store', header: t('المتجر') },
+    { id: 'store', header: t('المتجر'), cell: ({ row }) => t(row.original.store) },
     { accessorKey: 'email', header: t('البريد الإلكتروني') },
     { id: 'phone', header: t('الجوال'), cell: ({ row }) => <span dir="ltr">{row.original.phone}</span> },
     { id: 'storage', header: t('التخزين'), cell: ({ row }) => { const m = row.original; const pct = m.limit ? Math.min(100, Math.round((m.used / m.limit) * 100)) : 0; return (
@@ -60,7 +60,7 @@ export default function MerchantsPage() {
       <ActionButtons actions={[
         { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate(`/records/merchant/${row.original.id}`) },
         { icon: Pencil, label: 'تعديل', onClick: () => { setEditing(row.original); setFormOpen(true) }, hidden: !can('merchants.update') },
-        { icon: row.original.status === 'نشط' ? UserX : UserCheck, label: row.original.status === 'نشط' ? 'إيقاف الحساب' : 'تفعيل الحساب', onClick: () => toggleStatus.mutate(row.original.id), hidden: !can('merchants.update') },
+        { icon: row.original.status === 'نشط' ? UserX : UserCheck, label: row.original.status === 'نشط' ? t('إيقاف الحساب') : t('تفعيل الحساب'), onClick: () => toggleStatus.mutate(row.original.id), hidden: !can('merchants.update') },
         { icon: Trash2, label: 'حذف', variant: 'destructive', onClick: () => setDeleting(row.original), hidden: !can('merchants.delete') },
       ]} />) },
   ]
@@ -93,7 +93,7 @@ export default function MerchantsPage() {
               <option value="غير منضم بعد">{t('غير منضم بعد')}</option>
             </select>
             <div className="ms-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => { downloadCSV('merchants', ['اسم المتجر', 'الاسم', 'البريد', 'الجوال', 'الحالة', 'الانضمام', 'تاريخ الإنشاء'], (data?.rows ?? []).map(m => [m.store, m.first + ' ' + m.last, m.email, m.phone, m.status, m.join, m.created])); toast.success('تم تصدير الملف بنجاح') }}>{t('تصدير')}</Button>
+              <Button variant="outline" size="sm" onClick={() => { downloadCSV('merchants', ['اسم المتجر', 'الاسم', 'البريد', 'الجوال', 'الحالة', 'الانضمام', 'تاريخ الإنشاء'], (data?.rows ?? []).map(m => [m.store, m.first + ' ' + m.last, m.email, m.phone, m.status, m.join, m.created])); toast.success(t('تم تصدير الملف بنجاح')) }}>{t('تصدير')}</Button>
               {can('merchants.create') && <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true) }}><Plus className="size-4" /> {t('إنشاء تاجر')}</Button>}
             </div>
           </div>
@@ -107,9 +107,9 @@ export default function MerchantsPage() {
         onOpenChange={v => { if (!v) setDeleting(null) }}
         destructive
         loading={removeMut.isPending}
-        title="حذف التاجر"
-        description={<>هل أنت متأكد من حذف التاجر <b>{deleting?.first} {deleting?.last}</b> ({deleting?.store})؟<br /><span className="font-bold text-destructive">سيتم حذف جميع بيانات التاجر من قاعدة البيانات ولا يمكن التراجع.</span></>}
-        confirmLabel="تأكيد الحذف"
+        title={t('حذف التاجر')}
+        description={<>{t('هل أنت متأكد من حذف هذا السجل بشكل نهائي؟')} <b>{deleting?.first} {deleting?.last}</b> ({deleting?.store})<br /><span className="font-bold text-destructive">{t('سيتم حذف جميع بيانات التاجر من قاعدة البيانات ولا يمكن التراجع.')}</span></>}
+        confirmLabel={t('تأكيد الحذف')}
         onConfirm={() => removeMut.mutate(deleting!.id)}
       />
     </div>

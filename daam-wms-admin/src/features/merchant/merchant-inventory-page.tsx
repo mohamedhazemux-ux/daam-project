@@ -13,25 +13,15 @@ import { merchantInventoryService, type StockLevelRow } from '@/services/merchan
 import { merchantProductsService } from '@/services/merchant-products.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
-import { downloadCSV } from '@/lib/utils'
+import { downloadCSV, arDate } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import { Eye, Layers, PackageMinus, PackagePlus, Search } from 'lucide-react'
 import type { StockRequest } from '@/types'
+
 const statusLabel = (s: string) => (s === 'معتمد' ? 'موافق عليه' : s)
-export default function MerchantInventoryPage() {
-  const t = useT()
-  const [tab, setTab] = useState<'levels' | 'requests'>('levels')
-  return (
-    <div className="space-y-4">
-      <div className="flex gap-1 rounded-xl border bg-card p-2 shadow-sm">
-        <button onClick={() => setTab('levels')} className={tab === 'levels' ? 'rounded-lg bg-foreground px-4 py-2 text-[13px] font-extrabold text-background' : 'rounded-lg px-4 py-2 text-[13px] font-bold text-muted-foreground hover:bg-accent'}>{t('مستويات المخزون')}</button>
-        <button onClick={() => setTab('requests')} className={tab === 'requests' ? 'rounded-lg bg-foreground px-4 py-2 text-[13px] font-extrabold text-background' : 'rounded-lg px-4 py-2 text-[13px] font-bold text-muted-foreground hover:bg-accent'}>{t('طلبات المخزون')}</button>
-      </div>
-      {tab === 'levels' ? <LevelsSection /> : <RequestsSection />}
-    </div>
-  )
-}
-function LevelsSection() {
+
+/* ---------- مستويات المخزون ---------- */
+export function MerchantStockLevelsPage() {
   const t = useT()
   const user = useAuthStore(s => s.user)
   const qc = useQueryClient()
@@ -49,22 +39,22 @@ function LevelsSection() {
   const [fErr, setFErr] = useState('')
   const submit = useMutation({
     mutationFn: () => merchantInventoryService.submitRequest(user!.store!, modal as 'إضافة' | 'سحب', form),
-    onSuccess: () => { toast.success(modal === 'إضافة' ? 'تم إرسال طلب إضافة المخزون بنجاح' : 'تم إرسال طلب سحب المخزون بنجاح'); qc.invalidateQueries({ queryKey: ['m-requests'] }); setModal('') },
+    onSuccess: () => { toast.success(modal === 'إضافة' ? t('تم إرسال طلب إضافة المخزون بنجاح') : t('تم إرسال طلب سحب المخزون بنجاح')); qc.invalidateQueries({ queryKey: ['m-requests'] }); setModal('') },
   })
   const doSubmit = () => {
-    if (!form.product) { setFErr('اسم المنتج مطلوب'); return }
-    if (!form.qty && form.qty !== 0) { setFErr('الكمية مطلوبة'); return }
-    if (form.qty < 1) { setFErr('يجب أن تكون الكمية أكبر من 0'); return }
-    if (form.notes.length > 500) { setFErr('الملاحظات يجب أن تكون أقل من 500 حرف'); return }
+    if (!form.product) { setFErr(t('اسم المنتج مطلوب')); return }
+    if (!form.qty && form.qty !== 0) { setFErr(t('الكمية مطلوبة')); return }
+    if (form.qty < 1) { setFErr(t('يجب أن تكون الكمية أكبر من 0')); return }
+    if (form.notes.length > 500) { setFErr(t('الملاحظات يجب أن تكون أقل من 500 حرف')); return }
     setFErr('')
     submit.mutate()
   }
   const columns: ColumnDef<StockLevelRow, unknown>[] = [
-    { accessorKey: 'p', header: 'اسم المنتج', cell: ({ row }) => <b>{row.original.p}</b> },
-    { accessorKey: 'sku', header: 'رمز المنتج', cell: ({ row }) => <span dir="ltr">{row.original.sku}</span> },
-    { accessorKey: 'avail', header: 'الكمية المتاحة', cell: ({ row }) => <span className={row.original.avail === 0 ? 'font-black text-destructive' : row.original.avail < 25 ? 'font-black text-amber-600' : 'font-bold'}>{row.original.avail}</span> },
-    { accessorKey: 'res', header: 'الكمية المحجوزة' },
-    { accessorKey: 'total', header: 'الكمية الكلية', cell: ({ row }) => <b>{row.original.total}</b> },
+    { accessorKey: 'p', header: t('اسم المنتج'), cell: ({ row }) => <b>{t(row.original.p)}</b> },
+    { accessorKey: 'sku', header: t('رمز المنتج'), cell: ({ row }) => <span dir="ltr">{row.original.sku}</span> },
+    { accessorKey: 'avail', header: t('الكمية المتاحة'), cell: ({ row }) => <span className={row.original.avail === 0 ? 'font-black text-destructive' : row.original.avail < 25 ? 'font-black text-amber-600' : 'font-bold'}>{row.original.avail}</span> },
+    { accessorKey: 'res', header: t('الكمية المحجوزة') },
+    { accessorKey: 'total', header: t('الكمية الكلية'), cell: ({ row }) => <b>{row.original.total}</b> },
   ]
   return (
     <div className="space-y-4">
@@ -72,12 +62,12 @@ function LevelsSection() {
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Layers className="size-4 text-muted-foreground" />
-            <p className="text-sm font-extrabold">ملخص استخدام التخزين</p>
-            {st.status === 'تحذير' && <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-extrabold text-amber-700">اقتراب حد التخزين</span>}
-            {st.status === 'متجاوز' && <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-extrabold text-red-700">تجاوز حد التخزين</span>}
+            <p className="text-sm font-extrabold">{t('ملخص استخدام التخزين')}</p>
+            {st.status === 'تحذير' && <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-extrabold text-amber-700">{t('اقتراب حد التخزين')}</span>}
+            {st.status === 'متجاوز' && <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-extrabold text-red-700">{t('تجاوز حد التخزين')}</span>}
           </div>
           <div className="mb-2 h-2.5 w-full overflow-hidden rounded-full bg-muted"><div className={'h-full ' + (st.status === 'متجاوز' ? 'bg-destructive' : st.status === 'تحذير' ? 'bg-warning' : 'bg-foreground')} style={{ width: Math.min(100, st.pct) + '%' }} /></div>
-          <p className="text-xs font-bold text-muted-foreground">حد التخزين المجاني: <b>{st.limit} {st.unit}</b> — المستخدم حاليًا: <b>{st.used} {st.unit}</b> — نسبة الاستخدام: <b>{st.pct}%</b> — المتبقي: <b>{Math.max(0, st.limit - st.used)} {st.unit}</b></p>
+          <p className="text-xs font-bold text-muted-foreground">{t('حد التخزين المجاني')}: <b>{st.limit} {t(st.unit)}</b> — {t('المستخدم')}: <b>{st.used} {t(st.unit)}</b> — {t('النسبة')}: <b>{st.pct}%</b> — {t('المتبقي')}: <b>{Math.max(0, st.limit - st.used)} {t(st.unit)}</b></p>
         </div>
       )}
       <div className="rounded-xl border bg-card shadow-sm">
@@ -98,7 +88,7 @@ function LevelsSection() {
               <div className="ms-auto flex flex-wrap gap-2">
                  <Button size="sm" variant="outline" onClick={() => { setForm({ product: '', qty: 0, notes: '', attachment: '' }); setFErr(''); setModal('إضافة') }}><PackagePlus className="size-4" /> {t('إضافة مخزون')}</Button>
                  <Button size="sm" variant="outline" onClick={() => { setForm({ product: '', qty: 0, notes: '', attachment: '' }); setFErr(''); setModal('سحب') }}><PackageMinus className="size-4" /> {t('سحب مخزون')}</Button>
-                <Button size="sm" variant="outline" onClick={() => { downloadCSV('stock-levels', ['المنتج', 'SKU', 'متاح', 'محجوز', 'كلي'], (data?.rows ?? []).map(r => [r.p, r.sku, r.avail, r.res, r.total])); toast.success('تم تصدير مستويات المخزون بنجاح') }}>{t('تصدير')}</Button>
+                <Button size="sm" variant="outline" onClick={() => { downloadCSV('stock-levels', ['المنتج', 'SKU', 'متاح', 'محجوز', 'كلي'], (data?.rows ?? []).map(r => [r.p, r.sku, r.avail, r.res, r.total])); toast.success(t('تم تصدير مستويات المخزون بنجاح')) }}>{t('تصدير')}</Button>
               </div>
             </div>
           } />
@@ -106,16 +96,31 @@ function LevelsSection() {
       <Modal open={!!modal} onClose={() => setModal('')} title={modal === 'إضافة' ? t('إضافة مخزون') : t('سحب مخزون')}
         footer={<><Button variant="outline" onClick={() => setModal('')}>{t('إلغاء')}</Button><Button disabled={submit.isPending} onClick={doSubmit}>{t('إرسال')}</Button></>}>
         <div className="grid gap-3">
-          <div><Label>اسم المنتج <span className="text-destructive">*</span></Label>
+          <div><Label>{t('اسم المنتج')} <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))}>
-              <option value="">اختر المنتج...</option>
+              <option value="">{t('اختر المنتج...')}</option>
               {(prods?.rows ?? []).map(p => <option key={p.ref} value={p.name}>{p.name}</option>)}
             </select></div>
-          <div><Label>الكمية <span className="text-destructive">*</span></Label><Input type="number" min={1} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
-          <div><Label>الملاحظات (اختياري — 500 حرف)</Label><Textarea maxLength={500} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+          <div>
+            <Label>{t('الكمية المطلوبة')} <span className="text-destructive">*</span></Label>
+            <Input
+              type="number"
+              min={1}
+              placeholder={t('أدخل الكمية (الحد الأدنى 1)')}
+              value={form.qty || ''}
+              onChange={e => {
+                const v = e.target.value === '' ? 0 : Number(e.target.value)
+                setForm(f => ({ ...f, qty: v }))
+                if (v <= 0) setFErr(t('يرجى إدخال كمية صحيحة تبدأ من 1 أو أكثر'))
+                else setFErr('')
+              }}
+            />
+            <p className="mt-1 text-[11px] font-bold text-muted-foreground">{t('الحد الأدنى')}: <b className="text-foreground">1 {t('قطعة')}</b> — {t('يمكنك كتابة الرقم مباشرة')}</p>
+          </div>
+          <div><Label>{t('الملاحظات (اختياري — 500 حرف)')}</Label><Textarea maxLength={500} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
           <div>
             <FileUploadWithPreview
-              label="المرفقات (اختياري — PDF/PNG/JPG)"
+              label={t('المرفقات (اختياري — PDF/PNG/JPG)')}
               files={form.attachment ? [form.attachment] : []}
               single
               onChange={files => setForm(f => ({ ...f, attachment: files[0] ?? '' }))}
@@ -127,7 +132,9 @@ function LevelsSection() {
     </div>
   )
 }
-function RequestsSection() {
+
+/* ---------- طلبات المخزون ---------- */
+export function MerchantStockRequestsPage() {
   const t = useT()
   const navigate = useNavigate()
   const user = useAuthStore(s => s.user)
@@ -141,14 +148,14 @@ function RequestsSection() {
   const [viewing, setViewing] = useState<StockRequest | null>(null)
   const columns: ColumnDef<StockRequest, unknown>[] = [
     { accessorKey: 'id', header: t('رقم الطلب'), cell: ({ row }) => <b>{row.original.id}</b> },
-    { accessorKey: 'p', header: t('اسم المنتج') },
-    { accessorKey: 'date', header: t('التاريخ') },
+    { accessorKey: 'p', header: t('اسم المنتج'), cell: ({ row }) => t(row.original.p) },
+    { accessorKey: 'date', header: t('التاريخ'), cell: ({ row }) => arDate(row.original.date) },
     { accessorKey: 'qty', header: t('الكمية') },
-    { id: 'type', header: t('النوع'), cell: ({ row }) => <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">{row.original.type}</span> },
+    { id: 'type', header: t('النوع'), cell: ({ row }) => <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">{t(row.original.type)}</span> },
     { id: 'status', header: t('الحالة'), cell: ({ row }) => <StatusBadge value={statusLabel(row.original.status)} /> },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
       <ActionButtons actions={[
-        { icon: Eye, label: 'عرض تفاصيل الطلب', onClick: () => navigate('/merchant/records/stock-request/' + row.original.id) },
+        { icon: Eye, label: t('عرض تفاصيل الطلب'), onClick: () => navigate('/merchant/records/stock-request/' + row.original.id) },
       ]} />) },
   ]
   return (
@@ -166,28 +173,94 @@ function RequestsSection() {
             <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
               <option value="">{t('كل الحالات')}</option><option value="معلق">{t('معلق')}</option><option value="معتمد">{t('موافق عليه')}</option><option value="مرفوض">{t('مرفوض')}</option>
             </select>
-            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('stock-requests', ['الرقم', 'المنتج', 'التاريخ', 'الكمية', 'النوع', 'الحالة'], (data?.rows ?? []).map(r => [r.id, r.p, r.date, r.qty, r.type, statusLabel(r.status)])); toast.success('تم تصدير طلبات المخزون بنجاح') }}>{t('تصدير')}</Button>
+            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('stock-requests', ['الرقم', 'المنتج', 'التاريخ', 'الكمية', 'النوع', 'الحالة'], (data?.rows ?? []).map(r => [r.id, r.p, r.date, r.qty, r.type, statusLabel(r.status)])); toast.success(t('تم تصدير طلبات المخزون بنجاح')) }}>{t('تصدير')}</Button>
           </div>
         } />
-      <Modal open={!!viewing} onClose={() => setViewing(null)} title={'تفاصيل طلب المخزون — ' + (viewing?.id ?? '')} footer={<Button variant="outline" onClick={() => setViewing(null)}>إغلاق</Button>}>
+      <Modal open={!!viewing} onClose={() => setViewing(null)} title={t('تفاصيل طلب المخزون') + ' — ' + (viewing?.id ?? '')} footer={<Button variant="outline" onClick={() => setViewing(null)}>{t('إغلاق')}</Button>}>
         {viewing && <>
           <div className="mb-3 grid grid-cols-2 gap-3">
-            {([['رقم الطلب', viewing.id], ['المنتج', viewing.p], ['الكمية', String(viewing.qty)], ['نوع الطلب', viewing.type], ['الحالة', statusLabel(viewing.status)], ['تاريخ الطلب', viewing.date]] as [string, string][]).map(([k, v]) => (
+            {([[t('رقم الطلب'), viewing.id], [t('المنتج'), viewing.p], [t('الكمية'), String(viewing.qty)], [t('نوع الطلب'), t(viewing.type)], [t('الحالة'), t(statusLabel(viewing.status))], [t('تاريخ الطلب'), viewing.date]] as [string, string][]).map(([k, v]) => (
               <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>))}
           </div>
-          <p className="mb-1 text-xs font-extrabold text-muted-foreground">الملاحظات</p>
+          <p className="mb-1 text-xs font-extrabold text-muted-foreground">{t('الملاحظات')}</p>
           <p className="mb-3 rounded-lg border bg-muted/40 p-3 text-[13px] font-bold">{viewing.notes || '—'}</p>
-          <p className="mb-1 text-xs font-extrabold text-muted-foreground">المرفقات</p>
+          <p className="mb-1 text-xs font-extrabold text-muted-foreground">{t('المرفقات')}</p>
           <div className="mb-3">
             <AttachmentBadgeList attachments={viewing.attachment ? [viewing.attachment] : []} />
           </div>
-          <p className="mb-1 text-xs font-extrabold text-muted-foreground">سجل الأنشطة</p>
+          <p className="mb-1 text-xs font-extrabold text-muted-foreground">{t('سجل الأنشطة')}</p>
           <div className="space-y-1">
-            <p className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• إنشاء الطلب بواسطة التاجر — {viewing.date}</p>
-            {viewing.status !== 'معلق' && <p className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {statusLabel(viewing.status)} بواسطة إدارة المنصة</p>}
+            <p className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {t('إنشاء الطلب بواسطة التاجر')} — {viewing.date}</p>
+            {viewing.status !== 'معلق' && <p className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {t(statusLabel(viewing.status))} {t('بواسطة إدارة المنصة')}</p>}
           </div>
         </>}
       </Modal>
     </div>
   )
 }
+
+/* ---------- استخدام التخزين ---------- */
+export function MerchantStorageUsagePage() {
+  const t = useT()
+  const user = useAuthStore(s => s.user)
+  const { data: st, isLoading } = useQuery({ queryKey: ['m-storage', user?.store], queryFn: () => merchantInventoryService.storage(user!.store!) })
+
+  if (isLoading) return <div className="p-8 text-center text-sm text-muted-foreground">{t('جار التحميل...')}</div>
+
+  return (
+    <div className="space-y-4">
+      {st && (
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-foreground text-background">
+              <Layers className="size-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-black">{t('استخدام مساحة التخزين بالمستودعات')}</h2>
+              <p className="text-xs text-muted-foreground">{t('متابعة الحد التخزيني المجاني ونسب الاستهلاك الحالية')}</p>
+            </div>
+            <div className="ms-auto">
+              {st.status === 'تحذير' && <span className="rounded-md bg-amber-100 px-3 py-1 text-xs font-extrabold text-amber-700">{t('اقتراب حد التخزين')}</span>}
+              {st.status === 'متجاوز' && <span className="rounded-md bg-red-100 px-3 py-1 text-xs font-extrabold text-red-700">{t('تجاوز حد التخزين')}</span>}
+              {st.status === 'اعتيادي' && <span className="rounded-md bg-emerald-100 px-3 py-1 text-xs font-extrabold text-emerald-700">{t('معدل طبيعي')}</span>}
+            </div>
+          </div>
+
+          <div className="mb-4 space-y-1.5">
+            <div className="flex justify-between text-xs font-bold text-muted-foreground">
+              <span>{t('نسبة الاستخدام')}: {st.pct}%</span>
+              <span>{st.used} / {st.limit} {t(st.unit)}</span>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+              <div className={'h-full transition-all duration-300 ' + (st.status === 'متجاوز' ? 'bg-destructive' : st.status === 'تحذير' ? 'bg-warning' : 'bg-foreground')} style={{ width: Math.min(100, st.pct) + '%' }} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-lg border bg-muted/40 p-3">
+              <p className="text-[11px] font-bold text-muted-foreground">{t('حد التخزين المجاني')}</p>
+              <p className="text-base font-black">{st.limit} {t(st.unit)}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-3">
+              <p className="text-[11px] font-bold text-muted-foreground">{t('المستخدم حاليًا')}</p>
+              <p className="text-base font-black">{st.used} {t(st.unit)}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-3">
+              <p className="text-[11px] font-bold text-muted-foreground">{t('المساحة المتبقية')}</p>
+              <p className="text-base font-black">{Math.max(0, st.limit - st.used)} {t(st.unit)}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-3">
+              <p className="text-[11px] font-bold text-muted-foreground">{t('حالة المساحة')}</p>
+              <p className="text-base font-black">{t(st.status)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function MerchantInventoryPage() {
+  return <MerchantStockLevelsPage />
+}
+

@@ -17,19 +17,51 @@ export const ordersService = {
       (!status || o.status === status) && (!ship || o.ship === ship) && (!merchant || o.m === merchant))
     return paginate(rows, q)
   },
-  async setStatus(ids: string[], status: Order['status']) {
-    await delay(400)
+  async setStatus(ids: string[], status: Order['status'], reason?: string) {
+    await delay(300)
     db.orders.forEach(o => {
       if (ids.includes(o.id)) {
         o.status = status
+        if (status === 'مرفوض' && reason) o.rejectionReason = reason
+        if (status === 'ملغي' && reason) o.cancellationReason = reason
         const mo = merchantOrders.find(x => x.ref === o.id)
         if (mo) {
           mo.status = status as any
-          mo.log.unshift(`تحديث حالة الطلب إلى "${status}" بواسطة إدارة المنصة — ${todayISO()}`)
+          const noteSuffix = reason ? ` — السبب: ${reason}` : ''
+          mo.log.unshift(`تحديث حالة الطلب إلى "${status}" بواسطة إدارة المنصة${noteSuffix} — ${todayISO()}`)
         }
       }
     })
-    audit('تحديث حالة الطلب ' + ids.join('، ') + ' إلى ' + status, 'طلبات', 'تعديل')
+    audit('تحديث حالة الطلب ' + ids.join('، ') + ' إلى ' + status + (reason ? ' — السبب: ' + reason : ''), 'طلبات', 'تعديل')
+  },
+  async acceptOrder(id: string) {
+    return this.setStatus([id], 'قيد التنفيذ')
+  },
+  async rejectOrder(id: string, reason: string) {
+    const trimmed = reason.trim()
+    if (!trimmed || trimmed.length < 5 || trimmed.length > 500) {
+      throw new Error('سبب الرفض إلزامي ويجب أن يكون بين 5 و 500 حرف')
+    }
+    return this.setStatus([id], 'مرفوض', trimmed)
+  },
+  async packOrder(id: string) {
+    return this.setStatus([id], 'قيد التغليف')
+  },
+  async pickupOrder(id: string) {
+    return this.setStatus([id], 'جاهز للاستلام')
+  },
+  async startDelivery(id: string) {
+    return this.setStatus([id], 'قيد التوصيل')
+  },
+  async completeOrder(id: string) {
+    return this.setStatus([id], 'مكتمل')
+  },
+  async cancelOrder(id: string, reason: string) {
+    const trimmed = reason.trim()
+    if (!trimmed || trimmed.length < 5 || trimmed.length > 500) {
+      throw new Error('سبب الإلغاء إلزامي ويجب أن يكون بين 5 و 500 حرف')
+    }
+    return this.setStatus([id], 'ملغي', trimmed)
   },
   async assignPicker(id: string, picker: string) {
     await delay(300)
@@ -51,3 +83,4 @@ export const ordersService = {
     return 'shipping-label-' + id + '.pdf'
   },
 }
+

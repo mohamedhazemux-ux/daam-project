@@ -55,8 +55,8 @@ export function NotificationsPopover() {
                     setOpen(false)
                     navigate(getNotificationRoute(n, isMerchant))
                   }} className="mb-1 w-full rounded-lg border p-2 text-start hover:bg-accent">
-                    <p className="text-[12px] font-extrabold">{n.title}</p>
-                    <p className="truncate text-[11px] font-semibold text-muted-foreground">{n.msg}</p>
+                    <p className="text-[12px] font-extrabold">{t(n.title)}</p>
+                    <p className="truncate text-[11px] font-semibold text-muted-foreground">{t(n.msg)}</p>
                   </button>
                 ))
               )}

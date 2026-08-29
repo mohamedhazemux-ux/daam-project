@@ -27,12 +27,12 @@ export default function SettingsPage() {
   const lang = usePrefsStore(s => s.lang)
   const toggleEvent = (name: string, ch: 'email' | 'app' | 'sms') => { systemService.toggleEvent(name, ch); qc.invalidateQueries({ queryKey: ['notif-events'] }) }
   const saveNotif = () => {
-    if (!chEmail && !chApp) { setRErr('مطلوب قناة افتراضية واحدة على الأقل'); return }
+    if (!chEmail && !chApp) { setRErr(t('مطلوب قناة افتراضية واحدة على الأقل')); return }
     const d = +retention
-    if (!d || d < 7) { setRErr('أيام الاحتفاظ يجب أن تكون 7 على الأقل'); return }
-    if (d > 365) { setRErr('أيام الاحتفاظ يجب أن تكون أقل من 365'); return }
+    if (!d || d < 7) { setRErr(t('أيام الاحتفاظ يجب أن تكون 7 على الأقل')); return }
+    if (d > 365) { setRErr(t('أيام الاحتفاظ يجب أن تكون أقل من 365')); return }
     setRErr('')
-    systemService.saveSettings('الإشعارات').then(() => toast.success('تم تحديث إعدادات الإشعارات بنجاح'))
+    systemService.saveSettings('الإشعارات').then(() => toast.success(t('تم تحديث إعدادات الإشعارات بنجاح')))
   }
   return (
     <div className="space-y-4">
@@ -67,91 +67,91 @@ export default function SettingsPage() {
                   onChange={setLogo}
                 />
               </div>
-              <div><Label>{t('العملة الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="SAR"><option value="SAR">ريال سعودي (SAR)</option><option value="AED">درهم إماراتي</option><option value="KWD">دينار كويتي</option></select></div>
+              <div><Label>{t('العملة الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="SAR"><option value="SAR">{t('ريال سعودي')} (SAR)</option><option value="AED">{t('درهم إماراتي')}</option><option value="KWD">{t('دينار كويتي')}</option></select></div>
               <div><Label>{t('اللغة الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="ar"><option value="ar">{t('العربية')}</option><option value="en">English</option></select></div>
-              <div className="md:col-span-2"><Button onClick={() => systemService.saveSettings('عام').then(() => toast.success('تم تحديث معاملات النظام بنجاح — تم تطبيق التغييرات فورًا'))}>{t('حفظ التغييرات')}</Button></div>
+              <div className="md:col-span-2"><Button onClick={() => systemService.saveSettings('عام').then(() => toast.success(t('تم تحديث معاملات النظام بنجاح — تم تطبيق التغييرات فورًا')))}>{t('حفظ التغييرات')}</Button></div>
             </CardContent></Card>
         </div>
       )}
       {tab === 'orders' && (
-        <Card><CardHeader><CardTitle className="text-sm">إعدادات الطلبات</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle className="text-sm">{t('إعدادات الطلبات')}</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <div><Label>التأكيد التلقائي للطلبات</Label><select className={selectCls + ' w-full'} defaultValue="yes"><option value="yes">نعم</option><option value="no">لا (تأكيد يدوي)</option></select></div>
-            <div><Label>الحد الأقصى للقطع في الطلب (1 – 1000)</Label><Input type="number" defaultValue={100} min={1} max={1000} /></div>
-            <div><Label>طريقة الشحن الافتراضية</Label><select className={selectCls + ' w-full'} defaultValue="std"><option value="std">الشحن القياسي</option><option value="exp">الشحن السريع</option></select></div>
-            <div className="md:col-span-2"><Button onClick={() => systemService.saveSettings('الطلبات').then(() => toast.success('تم تحديث معاملات النظام بنجاح — تم تطبيق التغييرات فورًا'))}>حفظ التغييرات</Button></div>
+            <div><Label>{t('التأكيد التلقائي للطلبات')}</Label><select className={selectCls + ' w-full'} defaultValue="yes"><option value="yes">{t('نعم')}</option><option value="no">{t('لا (تأكيد يدوي)')}</option></select></div>
+            <div><Label>{t('الحد الأقصى للقطع في الطلب')} (1 – 1000)</Label><Input type="number" defaultValue={100} min={1} max={1000} /></div>
+            <div><Label>{t('طريقة الشحن الافتراضية')}</Label><select className={selectCls + ' w-full'} defaultValue="std"><option value="std">{t('الشحن القياسي')}</option><option value="exp">{t('الشحن السريع')}</option></select></div>
+            <div className="md:col-span-2"><Button onClick={() => systemService.saveSettings('الطلبات').then(() => toast.success(t('تم تحديث معاملات النظام بنجاح — تم تطبيق التغييرات فورًا')))}>{t('حفظ التغييرات')}</Button></div>
           </CardContent></Card>
       )}
       {tab === 'inventory' && (
-        <Card><CardHeader><CardTitle className="text-sm">المخزون وحدود التخزين</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle className="text-sm">{t('المخزون وحدود التخزين')}</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
-            <div><Label>حد التنبيه للمخزون المنخفض (1 – 1000)</Label><Input type="number" defaultValue={25} /></div>
-            <div><Label>تفعيل حجز المخزون</Label><select className={selectCls + ' w-full'} defaultValue="yes"><option value="yes">نعم</option><option value="no">لا</option></select></div>
-            <div><Label>الاعتماد التلقائي لإضافات أقل من</Label><Input type="number" defaultValue={0} /></div>
-            <div><Label>حد التخزين المجاني الافتراضي (0 – 1,000,000)</Label><Input type="number" defaultValue={60} /></div>
-            <div><Label>وحدة حد التخزين</Label><select className={selectCls + ' w-full'} defaultValue="m3"><option value="m3">م³</option><option value="pallet">مواقع طبلية</option><option value="units">وحدات</option></select></div>
-            <div><Label>نسبة التنبيه التحذيري (50% – 100%)</Label><Input type="number" defaultValue={80} /></div>
-            <div className="md:col-span-3"><Button onClick={() => systemService.saveSettings('المخزون').then(() => toast.success('تم تحديث إعدادات حد التخزين بنجاح'))}>حفظ التغييرات</Button></div>
+            <div><Label>{t('حد التنبيه للمخزون المنخفض')} (1 – 1000)</Label><Input type="number" defaultValue={25} /></div>
+            <div><Label>{t('تفعيل حجز المخزون')}</Label><select className={selectCls + ' w-full'} defaultValue="yes"><option value="yes">{t('نعم')}</option><option value="no">{t('لا')}</option></select></div>
+            <div><Label>{t('الاعتماد التلقائي لإضافات أقل من')}</Label><Input type="number" defaultValue={0} /></div>
+            <div><Label>{t('حد التخزين المجاني الافتراضي')} (0 – 1,000,000)</Label><Input type="number" defaultValue={60} /></div>
+            <div><Label>{t('وحدة حد التخزين')}</Label><select className={selectCls + ' w-full'} defaultValue="m3"><option value="m3">{t('م³')}</option><option value="pallet">{t('مواقع طبلية')}</option><option value="units">{t('وحدات')}</option></select></div>
+            <div><Label>{t('نسبة التنبيه التحذيري')} (50% – 100%)</Label><Input type="number" defaultValue={80} /></div>
+            <div className="md:col-span-3"><Button onClick={() => systemService.saveSettings('المخزون').then(() => toast.success(t('تم تحديث إعدادات حد التخزين بنجاح')))}>{t('حفظ التغييرات')}</Button></div>
           </CardContent></Card>
       )}
       {tab === 'finance' && (
-        <Card><CardHeader><CardTitle className="text-sm">السحب والفاتورة الشهرية وفوترة الخدمات</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle className="text-sm">{t('السحب والفاتورة الشهرية وفوترة الخدمات')}</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
-            <div><Label>الحد الأدنى للسحب (1 – 10,000)</Label><Input type="number" defaultValue={100} /></div>
-            <div><Label>رسوم معالجة السحب % (0 – 50)</Label><Input type="number" defaultValue={1.5} /></div>
-            <div><Label>فائدة رصيد المحفظة</Label><select className={selectCls + ' w-full'} defaultValue="no"><option value="no">لا</option><option value="yes">نعم</option></select></div>
-            <div><Label>محاولات إعادة الخصم (1 – 7)</Label><Input type="number" defaultValue={3} /></div>
-            <div><Label>الفاصل بين المحاولات بالأيام (1 – 7)</Label><Input type="number" defaultValue={2} /></div>
-            <div><Label>الإلغاء التلقائي بعد فشل المحاولات</Label><select className={selectCls + ' w-full'} defaultValue="no"><option value="no">لا</option><option value="yes">نعم</option></select></div>
-            <div><Label>يوم توليد الفاتورة (1 – 28)</Label><Input type="number" defaultValue={1} /></div>
-            <div><Label>أيام استحقاق الفاتورة (1 – 90)</Label><Input type="number" defaultValue={15} /></div>
-            <div><Label>الإرسال التلقائي عبر البريد</Label><select className={selectCls + ' w-full'} defaultValue="yes"><option value="yes">نعم</option><option value="no">لا</option></select></div>
-            <div><Label>نسبة الضريبة (0 – 100)</Label><Input type="number" defaultValue={15} /></div>
-            <div><Label>رسوم تنفيذ الطلب الواحد</Label><Input type="number" defaultValue={5} /></div>
-            <div><Label>رسوم تجاوز التخزين لكل وحدة</Label><Input type="number" defaultValue={2} /></div>
-            <div className="md:col-span-3"><Button onClick={() => systemService.saveSettings('المالية').then(() => toast.success('تم تحديث إعدادات الفواتير وفوترة الخدمات بنجاح'))}>حفظ التغييرات</Button></div>
+            <div><Label>{t('الحد الأدنى للسحب')} (1 – 10,000)</Label><Input type="number" defaultValue={100} /></div>
+            <div><Label>{t('رسوم معالجة السحب % (0 – 50)')}</Label><Input type="number" defaultValue={1.5} /></div>
+            <div><Label>{t('فائدة رصيد المحفظة')}</Label><select className={selectCls + ' w-full'} defaultValue="no"><option value="no">{t('لا')}</option><option value="yes">{t('نعم')}</option></select></div>
+            <div><Label>{t('محاولات إعادة الخصم')} (1 – 7)</Label><Input type="number" defaultValue={3} /></div>
+            <div><Label>{t('الفاصل بين المحاولات بالأيام')} (1 – 7)</Label><Input type="number" defaultValue={2} /></div>
+            <div><Label>{t('الإلغاء التلقائي بعد فشل المحاولات')}</Label><select className={selectCls + ' w-full'} defaultValue="no"><option value="no">{t('لا')}</option><option value="yes">{t('نعم')}</option></select></div>
+            <div><Label>{t('يوم توليد الفاتورة')} (1 – 28)</Label><Input type="number" defaultValue={1} /></div>
+            <div><Label>{t('أيام استحقاق الفاتورة')} (1 – 90)</Label><Input type="number" defaultValue={15} /></div>
+            <div><Label>{t('الإرسال التلقائي عبر البريد')}</Label><select className={selectCls + ' w-full'} defaultValue="yes"><option value="yes">{t('نعم')}</option><option value="no">{t('لا')}</option></select></div>
+            <div><Label>{t('نسبة الضريبة')} (0 – 100)</Label><Input type="number" defaultValue={15} /></div>
+            <div><Label>{t('رسوم تنفيذ الطلب الواحد')}</Label><Input type="number" defaultValue={5} /></div>
+            <div><Label>{t('رسوم تجاوز التخزين لكل وحدة')}</Label><Input type="number" defaultValue={2} /></div>
+            <div className="md:col-span-3"><Button onClick={() => systemService.saveSettings('المالية').then(() => toast.success(t('تم تحديث إعدادات الفواتير وفوترة الخدمات بنجاح')))}>{t('حفظ التغييرات')}</Button></div>
           </CardContent></Card>
       )}
       {tab === 'notif' && (
-        <Card><CardHeader><CardTitle className="text-sm">التحكم بقنوات الإشعارات لكل حدث</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle className="text-sm">{t('التحكم بقنوات الإشعارات لكل حدث')}</CardTitle></CardHeader>
           <CardContent>
             <div className="mb-4 grid gap-4 md:grid-cols-3">
-              <div><Label>القنوات الافتراضية للأحداث الجديدة <span className="text-destructive">*</span></Label>
+              <div><Label>{t('القنوات الافتراضية للأحداث الجديدة')} <span className="text-destructive">*</span></Label>
                 <div className="flex gap-4 pt-2">
-                  <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={chEmail} onChange={e => setChEmail(e.target.checked)} /> بريد إلكتروني</label>
-                  <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={chApp} onChange={e => setChApp(e.target.checked)} /> داخل التطبيق</label>
+                  <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={chEmail} onChange={e => setChEmail(e.target.checked)} /> {t('بريد إلكتروني')}</label>
+                  <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={chApp} onChange={e => setChApp(e.target.checked)} /> {t('داخل التطبيق')}</label>
                 </div></div>
-              <div><Label>أيام الاحتفاظ بالإشعارات (7 – 365)</Label><Input type="number" value={retention} onChange={e => setRetention(e.target.value)} /></div>
-              <div><Label>صوت الإشعار الفوري</Label><select className={selectCls + ' w-full'} defaultValue="no"><option value="no">لا</option><option value="yes">نعم</option></select></div>
+              <div><Label>{t('أيام الاحتفاظ بالإشعارات (7 – 365)')}</Label><Input type="number" value={retention} onChange={e => setRetention(e.target.value)} /></div>
+              <div><Label>{t('صوت الإشعار الفوري')}</Label><select className={selectCls + ' w-full'} defaultValue="no"><option value="no">{t('لا')}</option><option value="yes">{t('نعم')}</option></select></div>
             </div>
             {rErr && <p className="mb-2 text-xs font-bold text-destructive">{rErr}</p>}
             <div className="overflow-hidden rounded-lg border">
               <table className="w-full text-sm">
-                <thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">الحدث</th><th className="p-2 font-extrabold">بريد إلكتروني</th><th className="p-2 font-extrabold">داخل التطبيق</th><th className="p-2 font-extrabold">SMS</th><th className="p-2 text-start font-extrabold">القالب المرتبط</th></tr></thead>
+                <thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">{t('الحدث')}</th><th className="p-2 font-extrabold">{t('بريد إلكتروني')}</th><th className="p-2 font-extrabold">{t('داخل التطبيق')}</th><th className="p-2 font-extrabold">SMS</th><th className="p-2 text-start font-extrabold">{t('القالب المرتبط')}</th></tr></thead>
                 <tbody>{events?.map(e => (
                   <tr key={e.name} className="border-b">
-                    <td className="p-2 font-bold">{e.name}</td>
+                    <td className="p-2 font-bold">{t(e.name)}</td>
                     <td className="p-2 text-center"><input type="checkbox" checked={e.email} onChange={() => toggleEvent(e.name, 'email')} /></td>
                     <td className="p-2 text-center"><input type="checkbox" checked={e.app} onChange={() => toggleEvent(e.name, 'app')} /></td>
                     <td className="p-2 text-center"><input type="checkbox" checked={e.sms} onChange={() => toggleEvent(e.name, 'sms')} /></td>
-                    <td className="p-2 text-xs font-semibold text-muted-foreground">{e.tpl}</td>
+                    <td className="p-2 text-xs font-semibold text-muted-foreground">{t(e.tpl)}</td>
                   </tr>))}
                 </tbody>
               </table>
             </div>
-            <div className="mt-4"><Button onClick={saveNotif}>حفظ التغييرات</Button></div>
+            <div className="mt-4"><Button onClick={saveNotif}>{t('حفظ التغييرات')}</Button></div>
           </CardContent></Card>
       )}
       {tab === 'templates' && <TemplatesSection />}
       {tab === 'integrations' && (
-        <Card><CardHeader><CardTitle className="text-sm">إدارة التكاملات</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle className="text-sm">{t('إدارة التكاملات')}</CardTitle></CardHeader>
           <CardContent className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">التكامل</th><th className="p-2 text-start font-extrabold">النوع</th><th className="p-2 text-start font-extrabold">المزود</th><th className="p-2 text-start font-extrabold">API</th><th className="p-2 text-start font-extrabold">الحالة الصحية</th><th className="p-2 text-start font-extrabold">آخر مزامنة</th><th className="p-2" /></tr></thead>
+              <thead><tr className="border-b text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">{t('التكامل')}</th><th className="p-2 text-start font-extrabold">{t('النوع')}</th><th className="p-2 text-start font-extrabold">{t('المزود')}</th><th className="p-2 text-start font-extrabold">API</th><th className="p-2 text-start font-extrabold">{t('الحالة الصحية')}</th><th className="p-2 text-start font-extrabold">{t('آخر مزامنة')}</th><th className="p-2" /></tr></thead>
               <tbody>{integrations?.map((i) => (
                 <tr key={i.name} className="border-b">
-                  <td className="p-2 font-bold">{i.name}</td><td className="p-2">{i.type}</td><td className="p-2">{i.provider}</td><td dir="ltr" className="p-2 text-xs">{i.url}</td><td className="p-2"><StatusBadge value={i.health} /></td><td className="p-2 text-xs">{i.sync}</td>
-                  <td className="p-2"><Button variant="outline" size="sm" onClick={() => i.health === 'يعمل' ? toast.success('نتيجة الاختبار: الاتصال ناجح — API متاح والبيانات صالحة') : toast.error('نتيجة الاختبار: فشل الاتصال — تحقق من مفتاح API')}>اختبار الاتصال</Button></td>
+                  <td className="p-2 font-bold">{t(i.name)}</td><td className="p-2">{t(i.type)}</td><td className="p-2">{t(i.provider)}</td><td dir="ltr" className="p-2 text-xs">{i.url}</td><td className="p-2"><StatusBadge value={i.health} /></td><td className="p-2 text-xs">{i.sync}</td>
+                  <td className="p-2"><Button variant="outline" size="sm" onClick={() => i.health === 'يعمل' ? toast.success(t('نتيجة الاختبار: الاتصال ناجح — API متاح والبيانات صالحة')) : toast.error(t('نتيجة الاختبار: فشل الاتصال — تحقق من مفتاح API'))}>{t('اختبار الاتصال')}</Button></td>
                 </tr>))}
               </tbody>
             </table>
@@ -162,54 +162,55 @@ export default function SettingsPage() {
 }
 function TemplatesSection() {
   const qc = useQueryClient()
+  const t = useT()
   const { data } = useQuery({ queryKey: ['email-templates'], queryFn: () => systemExtraService.templates() })
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<EmailTemplate | null>(null)
   const [form, setForm] = useState({ name: '', type: 'تحديث طلب', event: '', subject: '', body: '', status: 'نشط' as 'نشط' | 'غير نشط' })
   const [tErr, setTErr] = useState('')
-  const save = useMutation({ mutationFn: () => systemExtraService.saveTemplate(form, editing?.id), onSuccess: () => { toast.success(editing ? 'تم تحديث القالب بنجاح' : 'تم إنشاء القالب بنجاح'); qc.invalidateQueries({ queryKey: ['email-templates'] }); setOpen(false) }, onError: e => setTErr((e as Error).message) })
+  const save = useMutation({ mutationFn: () => systemExtraService.saveTemplate(form, editing?.id), onSuccess: () => { toast.success(t(editing ? 'تم تحديث القالب بنجاح' : 'تم إنشاء القالب بنجاح')); qc.invalidateQueries({ queryKey: ['email-templates'] }); setOpen(false) }, onError: e => setTErr((e as Error).message) })
   const ev = EVENTS.find(e => e.name === form.event)
   const submit = () => {
-    if (!form.name.trim()) { setTErr('اسم القالب مطلوب'); return }
-    if (!form.event) { setTErr('الحدث الإشعاري مطلوب'); return }
-    if (!form.subject.trim()) { setTErr('موضوع البريد مطلوب'); return }
-    if (!form.body.trim()) { setTErr('نص القالب مطلوب'); return }
+    if (!form.name.trim()) { setTErr(t('اسم القالب مطلوب')); return }
+    if (!form.event) { setTErr(t('الحدث الإشعاري مطلوب')); return }
+    if (!form.subject.trim()) { setTErr(t('موضوع البريد مطلوب')); return }
+    if (!form.body.trim()) { setTErr(t('نص القالب مطلوب')); return }
     setTErr('')
     save.mutate()
   }
   return (
-    <Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle className="text-sm">إدارة قوالب البريد الإلكتروني (ربط الأحداث)</CardTitle>
-      <Button size="sm" onClick={() => { setEditing(null); setForm({ name: '', type: 'تحديث طلب', event: '', subject: '', body: '', status: 'نشط' }); setTErr(''); setOpen(true) }}>إنشاء قالب</Button></CardHeader>
+    <Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle className="text-sm">{t('إدارة قوالب البريد الإلكتروني (ربط الأحداث)')}</CardTitle>
+      <Button size="sm" onClick={() => { setEditing(null); setForm({ name: '', type: 'تحديث طلب', event: '', subject: '', body: '', status: 'نشط' }); setTErr(''); setOpen(true) }}>{t('إنشاء قالب')}</Button></CardHeader>
       <CardContent>
         <div className="overflow-hidden rounded-lg border">
           <table className="w-full text-sm">
-            <thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">اسم القالب</th><th className="p-2 text-start font-extrabold">النوع</th><th className="p-2 text-start font-extrabold">الحدث المرتبط</th><th className="p-2 text-start font-extrabold">الحالة</th><th className="p-2" /></tr></thead>
-            <tbody>{(data ?? []).map(t => (
-              <tr key={t.id} className="border-b">
-                <td className="p-2 font-bold">{t.name}</td><td className="p-2">{t.type}</td><td className="p-2">{t.event}</td><td className="p-2"><StatusBadge value={t.status} /></td>
-                <td className="p-2"><Button size="sm" variant="outline" onClick={() => { setEditing(t); setForm({ name: t.name, type: t.type, event: t.event, subject: t.subject, body: t.body, status: t.status }); setTErr(''); setOpen(true) }}>تعديل</Button></td>
+            <thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">{t('اسم القالب')}</th><th className="p-2 text-start font-extrabold">{t('النوع')}</th><th className="p-2 text-start font-extrabold">{t('الحدث المرتبط')}</th><th className="p-2 text-start font-extrabold">{t('الحالة')}</th><th className="p-2" /></tr></thead>
+            <tbody>{(data ?? []).map(item => (
+              <tr key={item.id} className="border-b">
+                <td className="p-2 font-bold">{t(item.name)}</td><td className="p-2">{t(item.type)}</td><td className="p-2">{t(item.event)}</td><td className="p-2"><StatusBadge value={item.status} /></td>
+                <td className="p-2"><Button size="sm" variant="outline" onClick={() => { setEditing(item); setForm({ name: item.name, type: item.type, event: item.event, subject: item.subject, body: item.body, status: item.status }); setTErr(''); setOpen(true) }}>{t('تعديل')}</Button></td>
               </tr>))}
             </tbody>
           </table>
         </div>
-        <Modal open={open} onClose={() => setOpen(false)} wide title={editing ? 'تعديل قالب — ' + editing.id : 'إنشاء قالب بريد'}
-          footer={<><Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button><Button disabled={save.isPending} onClick={submit}>حفظ القالب</Button></>}>
+        <Modal open={open} onClose={() => setOpen(false)} wide title={editing ? t('تعديل قالب') + ' — ' + editing.id : t('إنشاء قالب بريد')}
+          footer={<><Button variant="outline" onClick={() => setOpen(false)}>{t('إلغاء')}</Button><Button disabled={save.isPending} onClick={submit}>{t('حفظ القالب')}</Button></>}>
           <div className="grid gap-3 md:grid-cols-2">
-            <div><Label>اسم القالب <span className="text-destructive">*</span></Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
-            <div><Label>نوع القالب</Label><select className={selectCls + ' w-full'} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{['تحديث طلب', 'إشعار الفاتورة', 'اعتماد', 'رفض', 'تنبيه'].map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-            <div><Label>الحدث الإشعاري المرتبط <span className="text-destructive">*</span></Label>
+            <div><Label>{t('اسم القالب')} <span className="text-destructive">*</span></Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>{t('نوع القالب')}</Label><select className={selectCls + ' w-full'} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{['تحديث طلب', 'إشعار الفاتورة', 'اعتماد', 'رفض', 'تنبيه'].map(tType => <option key={tType} value={tType}>{t(tType)}</option>)}</select></div>
+            <div><Label>{t('الحدث الإشعاري المرتبط')} <span className="text-destructive">*</span></Label>
               <select className={selectCls + ' w-full'} value={form.event} onChange={e => setForm(f => ({ ...f, event: e.target.value }))}>
-                <option value="">اختر الحدث...</option>
-                {EVENTS.map(e => <option key={e.name} value={e.name}>{e.name}</option>)}
+                <option value="">{t('اختر الحدث...')}</option>
+                {EVENTS.map(e => <option key={e.name} value={e.name}>{t(e.name)}</option>)}
               </select></div>
-            <div><Label>حالة القالب</Label>
+            <div><Label>{t('حالة القالب')}</Label>
               <div className="flex gap-5 pt-2">
-                <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={form.status === 'نشط'} onChange={() => setForm(f => ({ ...f, status: 'نشط' }))} /> نشط</label>
-                <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={form.status === 'غير نشط'} onChange={() => setForm(f => ({ ...f, status: 'غير نشط' }))} /> غير نشط</label>
+                <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={form.status === 'نشط'} onChange={() => setForm(f => ({ ...f, status: 'نشط' }))} /> {t('نشط')}</label>
+                <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={form.status === 'غير نشط'} onChange={() => setForm(f => ({ ...f, status: 'غير نشط' }))} /> {t('غير نشط')}</label>
               </div></div>
-            <div className="md:col-span-2"><Label>موضوع البريد <span className="text-destructive">*</span></Label><Input dir="ltr" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} /></div>
-            <div className="md:col-span-2"><Label>نص القالب (بالمتغيرات الديناميكية) <span className="text-destructive">*</span></Label><Textarea rows={5} value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} /></div>
-            {ev && <div className="md:col-span-2"><p className="mb-1 text-xs font-extrabold text-muted-foreground">المتغيرات الديناميكية المتاحة لهذا الحدث (اضغط للإدراج):</p>
+            <div className="md:col-span-2"><Label>{t('موضوع البريد')} <span className="text-destructive">*</span></Label><Input dir="ltr" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} /></div>
+            <div className="md:col-span-2"><Label>{t('نص القالب (بالمتغيرات الديناميكية)')} <span className="text-destructive">*</span></Label><Textarea rows={5} value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} /></div>
+            {ev && <div className="md:col-span-2"><p className="mb-1 text-xs font-extrabold text-muted-foreground">{t('المتغيرات الديناميكية المتاحة لهذا الحدث (اضغط للإدراج):')}</p>
               <div className="flex flex-wrap gap-1">{ev.vars.map(v => <button key={v} type="button" dir="ltr" onClick={() => setForm(f => ({ ...f, body: f.body + ' ' + v }))} className="rounded-md border bg-card px-2 py-1 text-[11px] font-bold hover:bg-accent">{v}</button>)}</div></div>}
           </div>
           {tErr && <p className="mt-2 text-xs font-bold text-destructive">{tErr}</p>}

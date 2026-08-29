@@ -34,22 +34,22 @@ export function StockRequestsPage() {
   const [reason, setReason] = useState('')
   const [rErr, setRErr] = useState('')
 
-  const approve = useMutation({ mutationFn: (id: string) => inventoryService.approveRequest(id), onSuccess: () => { toast.success('تمت الموافقة على طلب المخزون بنجاح'); invalidate(); setApproving(null) } })
-  const reject = useMutation({ mutationFn: (v: { id: string; reason: string }) => inventoryService.rejectRequest(v.id, v.reason), onSuccess: () => { toast.success('تم رفض طلب المخزون بنجاح'); invalidate(); setRejecting(null) } })
+  const approve = useMutation({ mutationFn: (id: string) => inventoryService.approveRequest(id), onSuccess: () => { toast.success(t('تمت الموافقة على طلب المخزون بنجاح')); invalidate(); setApproving(null) } })
+  const reject = useMutation({ mutationFn: (v: { id: string; reason: string }) => inventoryService.rejectRequest(v.id, v.reason), onSuccess: () => { toast.success(t('تم رفض طلب المخزون بنجاح')); invalidate(); setRejecting(null) } })
 
   const columns: ColumnDef<StockRequest, unknown>[] = [
     { accessorKey: 'id', header: t('رقم الطلب'), cell: ({ row }) => <b>{row.original.id}</b> },
-    { accessorKey: 'm', header: t('التاجر') },
-    { accessorKey: 'p', header: t('المنتج') },
-    { accessorKey: 'wh', header: t('المستودع') },
+    { id: 'm', header: t('التاجر'), cell: ({ row }) => t(row.original.m) },
+    { id: 'p', header: t('المنتج'), cell: ({ row }) => t(row.original.p) },
+    { id: 'wh', header: t('المستودع'), cell: ({ row }) => t(row.original.wh) },
     { accessorKey: 'qty', header: t('الكمية') },
     { id: 'type', header: t('النوع'), cell: ({ row }) => <StatusBadge value={row.original.type} /> },
     { id: 'date', header: t('تاريخ الطلب'), cell: ({ row }) => arDate(row.original.date) },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
       <ActionButtons actions={[
-        { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate(`/records/stock-request/${row.original.id}`) },
-        { icon: CheckCircle, label: 'اعتماد الطلب', onClick: () => setApproving(row.original.id) },
-        { icon: XCircle, label: 'رفض الطلب', variant: 'destructive', onClick: () => { setRejecting(row.original.id); setReason(''); setRErr('') } },
+        { icon: Eye, label: t('عرض التفاصيل'), onClick: () => navigate(`/records/stock-request/${row.original.id}`) },
+        { icon: CheckCircle, label: t('اعتماد الطلب'), onClick: () => setApproving(row.original.id) },
+        { icon: XCircle, label: t('رفض الطلب'), variant: 'destructive', onClick: () => { setRejecting(row.original.id); setReason(''); setRErr('') } },
       ]} />) },
   ]
 
@@ -71,23 +71,23 @@ export function StockRequestsPage() {
           </div>
         } />
 
-      <ConfirmDialog open={!!approving} onOpenChange={v => { if (!v) setApproving(null) }} title="اعتماد طلب المخزون" loading={approve.isPending}
-        description={'هل أنت متأكد من اعتماد طلب المخزون ' + (approving ?? '') + '؟ سيتم تحديث مستويات المخزون في النظام فور الاعتماد.'}
-        confirmLabel="اعتماد" onConfirm={() => approve.mutate(approving!)} />
+      <ConfirmDialog open={!!approving} onOpenChange={v => { if (!v) setApproving(null) }} title={t('اعتماد طلب المخزون')} loading={approve.isPending}
+        description={t('هل أنت متأكد من اعتماد طلب المخزون') + ' ' + (approving ?? '') + '؟ ' + t('سيتم تحديث مستويات المخزون في النظام فور الاعتماد.')}
+        confirmLabel={t('اعتماد')} onConfirm={() => approve.mutate(approving!)} />
 
-      <Modal open={!!rejecting} onClose={() => setRejecting(null)} title={'رفض طلب المخزون — ' + (rejecting ?? '')}
+      <Modal open={!!rejecting} onClose={() => setRejecting(null)} title={t('رفض طلب المخزون') + ' — ' + (rejecting ?? '')}
         footer={<>
-          <Button variant="outline" onClick={() => setRejecting(null)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => setRejecting(null)}>{t('إلغاء')}</Button>
           <Button variant="destructive" disabled={reject.isPending} onClick={() => {
             const r = reason.trim()
-            if (!r) { setRErr('سبب الرفض مطلوب'); return }
-            if (r.length < 10 || r.length > 500) { setRErr('يجب أن يكون سبب الرفض بين 10 و 500 حرف'); return }
+            if (!r) { setRErr(t('سبب الرفض مطلوب')); return }
+            if (r.length < 10 || r.length > 500) { setRErr(t('يجب أن يكون سبب الرفض بين 10 و 500 حرف')); return }
             setRErr('')
             reject.mutate({ id: rejecting!, reason: r })
-          }}>تأكيد الرفض</Button>
+          }}>{t('تأكيد الرفض')}</Button>
         </>}>
-        <Label>سبب الرفض <span className="text-destructive">*</span> (10 – 500 حرف)</Label>
-        <Textarea value={reason} maxLength={500} onChange={e => setReason(e.target.value)} placeholder="اشرح سبب رفض الطلب..." />
+        <Label>{t('سبب الرفض')} <span className="text-destructive">*</span> (10 – 500 {t('حرف')})</Label>
+        <Textarea value={reason} maxLength={500} onChange={e => setReason(e.target.value)} placeholder={t('اشرح سبب رفض الطلب...')} />
         {rErr && <p className="mt-1 text-xs font-bold text-destructive">{rErr}</p>}
       </Modal>
     </div>
@@ -123,25 +123,25 @@ export function StockLevelsPage() {
       if (modal === 'audit') { await inventoryService.count(form.p, form.wh, form.qty); return }
     },
     onSuccess: () => {
-      toast.success(modal === 'adjust' ? 'تم تسجيل تسوية المخزون بنجاح' : modal === 'transfer' ? 'تم تسجيل نقل المخزون بنجاح' : 'تم تسجيل نتيجة جرد المخزون بنجاح')
+      toast.success(modal === 'adjust' ? t('تم تسجيل تسوية المخزون بنجاح') : modal === 'transfer' ? t('تم تسجيل نقل المخزون بنجاح') : t('تم تسجيل نتيجة جرد المخزون بنجاح'))
       qc.invalidateQueries({ queryKey: ['stock-levels'] })
       setModal('')
     },
   })
 
   const submit = () => {
-    if (!form.p) { setFErr('اسم المنتج مطلوب'); return }
-    if (!form.qty || form.qty < 1) { setFErr('الكمية مطلوبة (عدد صحيح 1 على الأقل)'); return }
-    if (modal === 'adjust' && !form.reason.trim()) { setFErr('السبب مطلوب'); return }
-    if (modal === 'transfer' && form.wh === form.to) { setFErr('يجب اختيار مستودع مختلف للنقل'); return }
+    if (!form.p) { setFErr(t('اسم المنتج مطلوب')); return }
+    if (!form.qty || form.qty < 1) { setFErr(t('الكمية مطلوبة (عدد صحيح 1 على الأقل)')); return }
+    if (modal === 'adjust' && !form.reason.trim()) { setFErr(t('السبب مطلوب')); return }
+    if (modal === 'transfer' && form.wh === form.to) { setFErr(t('يجب اختيار مستودع مختلف للنقل')); return }
     setFErr('')
     run.mutate()
   }
 
   const columns: ColumnDef<StockLevel, unknown>[] = [
-    { accessorKey: 'p', header: t('المنتج'), cell: ({ row }) => <b>{row.original.p}</b> },
+    { id: 'p', header: t('المنتج'), cell: ({ row }) => <b>{t(row.original.p)}</b> },
     { accessorKey: 'sku', header: t('رمز المنتج (SKU)'), cell: ({ row }) => <span dir="ltr">{row.original.sku}</span> },
-    { accessorKey: 'wh', header: t('المستودع') },
+    { id: 'wh', header: t('المستودع'), cell: ({ row }) => t(row.original.wh) },
     { accessorKey: 'avail', header: t('الكمية المتاحة'), cell: ({ row }) => <b>{row.original.avail}</b> },
     { accessorKey: 'res', header: t('الكمية المحجوزة') },
     { id: 'total', header: t('الإجمالي'), cell: ({ row }) => row.original.avail + row.original.res },
@@ -159,58 +159,58 @@ export function StockLevelsPage() {
             </div>
             <select className={selectCls} value={wh} onChange={e => { setWh(e.target.value); setPage(1) }} aria-label={t('تصفية حسب المستودع')}>
               <option value="">{t('كل المستودعات')}</option>
-              {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{w}</option>)}
+              {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{t(w)}</option>)}
             </select>
             <div className="ms-auto flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => openModal('adjust')}>{t('تسوية المخزون')}</Button>
               <Button variant="outline" size="sm" onClick={() => openModal('transfer')}>{t('نقل المخزون بين المواقع')}</Button>
               <Button variant="outline" size="sm" onClick={() => openModal('audit')}>{t('بدء جرد المخزون')}</Button>
-              <Button variant="outline" size="sm" onClick={() => { downloadCSV('stock-levels', ['المنتج', 'SKU', 'المستودع', 'متاح', 'محجوز', 'إجمالي'], (data?.rows ?? []).map(s => [s.p, s.sku, s.wh, s.avail, s.res, s.avail + s.res])); toast.success('تم تصدير الملف بنجاح') }}>{t('تصدير')}</Button>
+              <Button variant="outline" size="sm" onClick={() => { downloadCSV('stock-levels', ['المنتج', 'SKU', 'المستودع', 'متاح', 'محجوز', 'إجمالي'], (data?.rows ?? []).map(s => [s.p, s.sku, s.wh, s.avail, s.res, s.avail + s.res])); toast.success(t('تم تصدير الملف بنجاح')) }}>{t('تصدير')}</Button>
             </div>
           </div>
         } />
 
-      <Modal open={!!modal} onClose={() => setModal('')} title={modal === 'adjust' ? 'تسوية المخزون' : modal === 'transfer' ? 'نقل المخزون بين المواقع' : 'بدء جرد المخزون'}
+      <Modal open={!!modal} onClose={() => setModal('')} title={modal === 'adjust' ? t('تسوية المخزون') : modal === 'transfer' ? t('نقل المخزون بين المواقع') : t('بدء جرد المخزون')}
         footer={<>
-          <Button variant="outline" onClick={() => setModal('')}>إلغاء</Button>
-          <Button disabled={run.isPending} onClick={submit}>حفظ</Button>
+          <Button variant="outline" onClick={() => setModal('')}>{t('إلغاء')}</Button>
+          <Button disabled={run.isPending} onClick={submit}>{t('حفظ')}</Button>
         </>}>
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="md:col-span-2"><Label>اسم المنتج <span className="text-destructive">*</span></Label>
+          <div className="md:col-span-2"><Label>{t('اسم المنتج')} <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={form.p} onChange={e => setForm(f => ({ ...f, p: e.target.value }))}>
-              <option value="">اختر المنتج...</option>
-              {(opts?.products ?? []).map(p => <option key={p} value={p}>{p}</option>)}
+              <option value="">{t('اختر المنتج...')}</option>
+              {(opts?.products ?? []).map(p => <option key={p} value={p}>{t(p)}</option>)}
             </select></div>
           {modal === 'adjust' && <>
-            <div><Label>المستودع</Label>
+            <div><Label>{t('المستودع')}</Label>
               <select className={selectCls + ' w-full'} value={form.wh} onChange={e => setForm(f => ({ ...f, wh: e.target.value }))}>
-                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{w}</option>)}
+                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{t(w)}</option>)}
               </select></div>
-            <div><Label>نوع التسوية</Label>
+            <div><Label>{t('نوع التسوية')}</Label>
               <select className={selectCls + ' w-full'} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                <option value="زيادة">زيادة</option>
-                <option value="إنقاص">إنقاص</option>
+                <option value="زيادة">{t('زيادة')}</option>
+                <option value="إنقاص">{t('إنقاص')}</option>
               </select></div>
-            <div><Label>الكمية <span className="text-destructive">*</span></Label><Input type="number" min={1} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
-            <div><Label>السبب <span className="text-destructive">*</span></Label><Input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="مثال: تصحيح بعد الجرد" /></div>
+            <div><Label>{t('الكمية')} <span className="text-destructive">*</span></Label><Input type="number" min={1} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
+            <div><Label>{t('السبب')} <span className="text-destructive">*</span></Label><Input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder={t('مثال: تصحيح بعد الجرد')} /></div>
           </>}
           {modal === 'transfer' && <>
-            <div><Label>المستودع المصدر</Label>
+            <div><Label>{t('المستودع المصدر')}</Label>
               <select className={selectCls + ' w-full'} value={form.wh} onChange={e => setForm(f => ({ ...f, wh: e.target.value }))}>
-                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{w}</option>)}
+                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{t(w)}</option>)}
               </select></div>
-            <div><Label>المستودع الوجهة</Label>
+            <div><Label>{t('المستودع الوجهة')}</Label>
               <select className={selectCls + ' w-full'} value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))}>
-                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{w}</option>)}
+                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{t(w)}</option>)}
               </select></div>
-            <div><Label>الكمية <span className="text-destructive">*</span></Label><Input type="number" min={1} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
+            <div><Label>{t('الكمية')} <span className="text-destructive">*</span></Label><Input type="number" min={1} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
           </>}
           {modal === 'audit' && <>
-            <div><Label>المستودع</Label>
+            <div><Label>{t('المستودع')}</Label>
               <select className={selectCls + ' w-full'} value={form.wh} onChange={e => setForm(f => ({ ...f, wh: e.target.value }))}>
-                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{w}</option>)}
+                {(opts?.warehouses ?? []).map(w => <option key={w} value={w}>{t(w)}</option>)}
               </select></div>
-            <div><Label>الكمية الفعلية <span className="text-destructive">*</span></Label><Input type="number" min={0} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
+            <div><Label>{t('الكمية الفعلية')} <span className="text-destructive">*</span></Label><Input type="number" min={0} value={form.qty || ''} onChange={e => setForm(f => ({ ...f, qty: +e.target.value }))} /></div>
           </>}
         </div>
         {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
@@ -232,8 +232,8 @@ export function StorageUsagePage() {
   const columns: ColumnDef<Merchant & { pct: number; st: string }, unknown>[] = [
     { accessorKey: 'store', header: t('التاجر'), cell: ({ row }) => <b>{row.original.store}</b> },
     { accessorKey: 'email', header: t('البريد الإلكتروني') },
-    { id: 'limit', header: t('حد التخزين المجاني'), cell: ({ row }) => row.original.limit + ' ' + row.original.unit },
-    { id: 'used', header: t('المستخدم حاليًا'), cell: ({ row }) => row.original.used + ' ' + row.original.unit },
+    { id: 'limit', header: t('حد التخزين المجاني'), cell: ({ row }) => row.original.limit + ' ' + t(row.original.unit) },
+    { id: 'used', header: t('المستخدم حاليًا'), cell: ({ row }) => row.original.used + ' ' + t(row.original.unit) },
     { id: 'pct', header: t('نسبة الاستخدام'), cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <div className={'flex h-2 w-24 overflow-hidden rounded-full bg-muted'}>
@@ -241,7 +241,7 @@ export function StorageUsagePage() {
         </div>
         <b>{row.original.pct}%</b>
       </div>) },
-    { id: 'remaining', header: t('المتبقي'), cell: ({ row }) => Math.max(0, row.original.limit - row.original.used) + ' ' + row.original.unit },
+    { id: 'remaining', header: t('المتبقي'), cell: ({ row }) => Math.max(0, row.original.limit - row.original.used) + ' ' + t(row.original.unit) },
     { id: 'st', header: t('حالة الحد'), cell: ({ row }) => <StatusBadge value={row.original.st} /> },
   ]
 
@@ -261,7 +261,7 @@ export function StorageUsagePage() {
               <option value="تحذير">{t('تحذير')}</option>
               <option value="متجاوز">{t('متجاوز')}</option>
             </select>
-            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('storage-usage', ['التاجر', 'الحد', 'المستخدم', 'النسبة', 'المتبقي', 'الحالة'], (data?.rows ?? []).map(r => [r.store, r.limit + ' ' + r.unit, r.used + ' ' + r.unit, r.pct + '%', Math.max(0, r.limit - r.used) + ' ' + r.unit, r.st])); toast.success('تم تصدير الملف بنجاح') }}>{t('تصدير')}</Button>
+            <Button variant="outline" size="sm" className="ms-auto" onClick={() => { downloadCSV('storage-usage', ['التاجر', 'الحد', 'المستخدم', 'النسبة', 'المتبقي', 'الحالة'], (data?.rows ?? []).map(r => [r.store, r.limit + ' ' + r.unit, r.used + ' ' + r.unit, r.pct + '%', Math.max(0, r.limit - r.used) + ' ' + r.unit, r.st])); toast.success(t('تم تصدير الملف بنجاح')) }}>{t('تصدير')}</Button>
           </div>
         } />
     </div>

@@ -1,328 +1,123 @@
+import { useTranslation as useReactI18n } from 'react-i18next'
+import i18n from '@/i18n'
 import { usePrefsStore } from '@/store/prefs-store'
+import arDict from '@/locales/ar.json'
+import enDict from '@/locales/en.json'
 
-export const EN: Record<string, string> = {
-  "إجراءات": "Actions",
-  "إجمالي": "Total",
-  "اختبار الاتصال": "Test connection",
-  "اختر المنتقي...": "Select picker...",
-  "إدارة التجار": "Merchant Management",
-  "إدارة الطلبات": "Order Management",
-  "إدارة المرتجعات": "Return Management",
-  "إدارة المنصة": "Platform Management",
-  "إدارة قوالب البريد الإلكتروني (ربط الأحداث)": "Email template management (event linking)",
-  "أدخل بريدك الإلكتروني المسجل": "Enter your registered email",
-  "ارجاع": "Returned",
-  "إرسال رمز التحقق": "Send verification code",
-  "استخدام التخزين": "Storage Usage",
-  "اسم القالب": "Template name",
-  "اسم المتجر": "Store Name",
-  "اسم المنتج": "Product name",
-  "اسم المنتج (3 – 100 حرف)": "Product name (3 – 100 chars)",
-  "اسم المنتج مطلوب": "Product name is required",
-  "اسم المنصة (3 – 100 حرف)": "Platform name (3 – 100 chars)",
-  "إسناد": "Assign",
-  "إسناد الطلب إلى منتقي": "Assign order to picker",
-  "اشتراكات الخدمات": "Service Subscriptions",
-  "إشعار الفاتورة": "Invoice notice",
-  "إضافة": "Addition",
-  "إضافة مخزون": "Stock addition",
-  "إظهار التفاصيل": "View details",
-  "إعادة تعيين كلمة المرور": "Reset password",
-  "اعتماد": "Approve",
-  "اعتماد طلب السحب": "Approve withdrawal request",
-  "إعدادات الإشعارات": "Notification settings",
-  "إعدادات الطلبات": "Order settings",
-  "إعدادات الطلبات الافتراضية": "Default order settings",
-  "إعدادات النظام": "System Settings",
-  "إغلاق": "Close",
-  "اكتشف": "View",
-  "إكمال تلقائي": "Auto-fill",
-  "الإجمالي": "Total",
-  "الإدارة": "Management",
-  "الاستحقاق": "Due Date",
-  "الاسم": "Name",
-  "الاشتراكات": "Subscriptions",
-  "الإشعارات": "Notifications",
-  "الإصدار": "Version",
-  "الأصناف": "Items",
-  "الإعدادات": "Settings",
-  "الإلحاح": "Urgency",
-  "الانضمام": "Join status",
-  "البريد": "Email",
-  "البنك": "Bank",
-  "التاجر": "Merchant",
-  "التاريخ": "Date",
-  "التاريخ المفضل": "Preferred Date",
-  "التجار": "Merchants",
-  "التخزين": "Storage",
-  "التقارير": "Reports",
-  "التقارير والتحليلات": "Reports & Analytics",
-  "التكاملات": "Integrations",
-  "التكلفة التقديرية": "Estimated Cost",
-  "التنبيهات والحدود": "Alerts & limits",
-  "التوليد": "Generated Date",
-  "الجنس": "Gender",
-  "الجوال": "Phone",
-  "الحالة": "Status",
-  "الحد": "Limit",
-  "الحد الأدنى": "Minimum",
-  "الحدث": "Event",
-  "الحدث المرتبط": "Linked event",
-  "الحساب": "Account",
-  "الحساب البنكي": "Bank account",
-  "الخدمات": "Services",
-  "الخدمة": "Service",
-  "الدور": "Role",
-  "الرئيسية": "Home",
-  "الرصيد بعد": "Running Balance",
-  "الرقم": "Number",
-  "السجلات": "System Logs",
-  "السعر": "Price",
-  "الشحن": "Shipping",
-  "الصفحة": "Page",
-  "الطريقة": "Method",
-  "الطلب الأصلي": "Original Order",
-  "الطلبات": "Orders",
-  "العربية": "Arabic",
-  "العملة الافتراضية": "Default currency",
-  "العمليات": "Operations",
-  "العميل": "Customer",
-  "العنوان الوطني المختصر": "Short National Address",
-  "العودة لتسجيل الدخول": "Back to sign in",
-  "إلغاء": "Cancel",
-  "الفترة": "Period",
-  "الفواتير": "Invoices",
-  "الفواتير الشهرية": "Monthly Invoices",
-  "القطع": "Items",
-  "الكمية": "Quantity",
-  "الكمية المتاحة": "Available quantity",
-  "الكمية المحجوزة": "Reserved quantity",
-  "الكمية مطلوبة": "Quantity is required",
-  "الكيان": "Entity",
-  "اللغة": "Language",
-  "اللغة الافتراضية": "Default language",
-  "المالية": "Finance",
-  "المالية والفوترة": "Finance & Billing",
-  "المبلغ": "Amount",
-  "المتبقي": "Remaining",
-  "المتغيرات الديناميكية المتاحة لهذا الحدث (اضغط للإدراج)": "Available dynamic variables for this event (click to insert)",
-  "المحافظ": "Wallets",
-  "المحافظ ذات الرصيد السالب تظهر باللون الأحمر": "Wallets with negative balance are highlighted in red",
-  "المحفظة والمالية": "Wallet & Finance",
-  "المخزون": "Inventory",
-  "المخزون والتخزين": "Inventory & Storage",
-  "المرتجعات": "Returns",
-  "المرجع": "Reference",
-  "المرجع الداخلي": "Internal reference",
-  "المرجع الداخلي:": "Internal reference:",
-  "المرجع الداخلي: ": "Internal reference: ",
-  "المرفقات": "Attachments",
-  "المستخدم": "Used",
-  "المستخدم / البريد الإلكتروني": "Email",
-  "المستودع": "Warehouse",
-  "المظهر واللغة": "Appearance & Language",
-  "المعرف": "ID",
-  "المعرّف": "ID",
-  "الملاحظات": "Notes",
-  "الملاحظات والمرفقات": "Notes & Attachments",
-  "الملف الشخصي": "My Profile",
-  "المنتج": "Product",
-  "المنتج مرتبط": "Product linked",
-  "المنتجات": "Products",
-  "المنفذ": "Actor",
-  "الموافقات": "Approvals",
-  "الموافقات الموحدة": "Unified Approvals",
-  "النسبة": "Percentage",
-  "النظام": "System",
-  "النوع": "Type",
-  "الوصف": "Description",
-  "الوقت": "Time",
-  "إنشاء تاجر": "Create merchant",
-  "إنشاء قالب": "Create template",
-  "إنشاء قالب بريد": "Create email template",
-  "إنشاء منتج منصة": "Create platform product",
-  "إنشاء منتج منصة جديد": "Create new platform product",
-  "أنواع الخدمات": "Service Types",
-  "أيام الاحتفاظ يجب أن تكون 7 على الأقل": "Retention days must be at least 7",
-  "أيام الاحتفاظ يجب أن تكون أقل من 365": "Retention days must be less than 365",
-  "أيام التعليق": "Pending days",
-  "إيقاف": "Suspend",
-  "بحث": "Search",
-  "بحث باسم المنتج أو SKU...": "Search by product name or SKU...",
-  "بحث بالتاجر أو البريد...": "Search by merchant or email...",
-  "بحث برقم الطلب أو اسم التاجر...": "Search by order number or merchant name...",
-  "بحث برقم الطلب أو التاجر...": "Search by order number or merchant...",
-  "بحث في التجار": "Search merchants",
-  "بحث في المحافظ": "Search wallets",
-  "بحث في طلبات السحب": "Search withdrawals",
-  "بحث في طلبات المخزون": "Search stock requests",
-  "بحث في مستويات المخزون": "Search stock levels",
-  "بحث في منتج": "Search product",
-  "بحث في منتجات المنصة": "Search platform products",
-  "بحث: اسم المتجر، التاجر، البريد، الجوال...": "Search: store name, merchant, email, mobile...",
-  "بدء جرد": "Start inventory count",
-  "بدء جرد المخزون": "Start stock audit",
-  "بريد إلكتروني": "Email",
-  "بوابة التجار": "Merchant portal",
-  "بيانات تجريبية": "Demo credentials",
-  "تاريخ الإنشاء": "Creation date",
-  "تاريخ الطلب": "Order Date",
-  "تأكيد": "Confirm",
-  "تأكيد الاكتمال": "Confirm completion",
-  "تأكيد كلمة المرور": "Confirm password",
-  "تأهيل تاجر": "Merchant onboarding",
-  "تحديث تلقائي كل ٥ دقائق": "Auto-refresh every 5 minutes",
-  "تحديث حالة الطلب": "Update order status",
-  "تحديث طلب": "Order update",
-  "تحذير": "Warning",
-  "تُحفظ بيانات المنتج في سجلات الحذف لإمكانية الاستعادة.": "Product data is kept in deletion logs for possible restoration.",
-  "تحميل المرفق": "Download attachment",
-  "تذكرني": "Remember me",
-  "تسجيل الخروج": "Logout",
-  "تسجيل الدخول": "Sign in",
-  "تسجيل الدخول إلى حسابك": "Sign in to your account",
-  "تسوية المخزون": "Stock adjustment",
-  "تسوية مخزون": "Adjust stock",
-  "تصدير": "Export",
-  "تصفية حسب الحالة": "Filter by status",
-  "تصفية حسب المستودع": "Filter by warehouse",
-  "تعديل": "Edit",
-  "تعديل قالب — ": "Edit template — ",
-  "تعديل منتج منصة": "Edit platform product",
-  "تعديل منتج منصة — ": "Edit platform product — ",
-  "تعديل يدوي": "Manual adjustment",
-  "تعطيل": "Disable",
-  "تغيير اللغة": "Change language",
-  "تفاصيل طلب المخزون": "Stock request details",
-  "تفعيل": "Activate",
-  "تم التنفيذ": "Processed",
-  "تم إنشاء منتج المنصة بنجاح — المرجع: ": "Platform product created successfully — reference: ",
-  "تم تحديث إعدادات الإشعارات بنجاح": "Notification settings updated successfully",
-  "تم تحديث بيانات منتج المنصة بنجاح": "Platform product data updated successfully",
-  "تم حذف منتج المنصة بنجاح": "Platform product deleted successfully",
-  "تمت الإعادة": "Reissued",
-  "تمت الإلغاء": "Cancelled",
-  "تمت الموافقة": "Approved",
-  "تنبيه": "Alert",
-  "تنفيذ الدفع": "Process payment",
-  "جار التنفيذ...": "Processing...",
-  "جاري الشحن": "Shipping",
-  "حالة": "Status",
-  "حالة الحد": "Limit Status",
-  "حالة الدفع": "Payment status",
-  "حالة القالب": "Template status",
-  "حالة المنتج": "Product status",
-  "حد التخزين المجاني": "Free Storage Limit",
-  "حذف": "Delete",
-  "حذف التاجر": "Delete merchant",
-  "حذف منتج المنصة": "Delete platform product",
-  "حفظ": "Save",
-  "حفظ التغييرات": "Save changes",
-  "حفظ القالب": "Save template",
-  "داخل التطبيق": "In-app",
-  "داكن (أسود)": "Dark (black)",
-  "رفض": "Reject",
-  "رقم الآيبان": "IBAN",
-  "رقم الطلب": "Order Number",
-  "رقم الهوية الوطنية": "National ID",
-  "رقم تأكيد التحويل البنكي": "Bank transfer confirmation number",
-  "رمز التحقق": "Verification code",
-  "سبب التعديل": "Adjustment reason",
-  "سبب التعديل مطلوب": "Adjustment reason is required",
-  "سبب الرفض": "Rejection reason",
-  "سجل الأنشطة": "Activity Log",
-  "سجل النشاط": "Activity Log",
-  "سجلات النظام": "System Logs",
-  "سحب": "Withdrawal",
-  "سحب مخزون": "Stock withdrawal",
-  "شعار المنصة (PNG/SVG حتى 2MB)": "Platform logo (PNG/SVG up to 2MB)",
-  "صورة المنتج": "Product image",
-  "صورة المنتج (اختياري — JPG/PNG/JPEG حتى 5MB)": "Product image (optional — JPG/PNG/JPEG up to 5MB)",
-  "طريقة الاسترداد": "Refund Method",
-  "طلب إرجاع": "Return request",
-  "طلب بانتظار المراجعة": "Request awaiting review",
-  "طلب خدمة": "Service request",
-  "طلب سحب مالي": "Withdrawal request",
-  "طلب معلق": "Pending request",
-  "طلبات الخدمة": "Service Requests",
-  "طلبات السحب": "Withdrawal requests",
-  "طلبات السحب المعلقة": "Pending withdrawals",
-  "طلبات المخزون": "Stock Requests",
-  "طلبات المخزون المعلقة": "Pending Stock Requests",
-  "عادي": "Normal",
-  "عام": "General",
-  "عرض": "View",
-  "غير منضم بعد": "Not joined yet",
-  "غير نشط": "Inactive",
-  "فاتح (أبيض)": "Light (white)",
-  "فتح القائمة": "Open menu",
-  "قائمة الحساب": "Account menu",
-  "قوالب البريد": "Email Templates",
-  "قيد المعالجة": "Processing",
-  "قيمة": "Value",
-  "كل الأنواع": "All types",
-  "كل الحالات": "All statuses",
-  "كل حالات الانضمام": "All join statuses",
-  "كلمة المرور": "Password",
-  "كلمة مرور جديدة": "New password",
-  "كلي": "Total",
-  "لا توجد بيانات": "No data",
-  "لا توجد بيانات للعرض": "No data to display",
-  "لا توجد مرفقات": "No attachments",
-  "لغة الواجهة": "Interface language",
-  "لوحة التحكم": "Dashboard",
-  "مؤكد": "Confirmed",
-  "مبلغ التعديل": "Adjustment amount",
-  "مبلغ التعديل مطلوب": "Adjustment amount is required",
-  "متاح": "Available",
-  "محافظ التجار": "Merchant Wallets",
-  "محجوز": "Reserved",
-  "مرتجع": "Returned",
-  "مرحبًا بعودتك": "Welcome back",
-  "مرفوض": "Rejected",
-  "مركز الإشعارات": "Notification Center",
-  "مزامنة": "Sync",
-  "مزيد": "More",
-  "مسؤولية الشحن": "Shipping Responsibility",
-  "مستودع مختلف": "Different warehouse",
-  "مستويات المخزون": "Stock Levels",
-  "مطلوب قناة افتراضية واحدة على الأقل": "At least one default channel is required",
-  "معلق": "Pending",
-  "مقدم الطلب": "Requester",
-  "مكتمل": "Completed",
-  "ملاحظات التعديل": "Adjustment notes",
-  "ملاحظات التعديل يجب أن تكون أقل من 500 حرف": "Adjustment notes must be under 500 characters",
-  "ملاحظات الدفع": "Payment notes",
-  "ملغي": "Cancelled",
-  "منتج المنصة": "Platform product",
-  "منتجات المنصة": "Platform Products",
-  "منتجات المنصة (CR-002)": "Platform products (CR-002)",
-  "منتجات رئيسية غير مخزّنة متاحة لجميع التجار دون تتبع مخزون. المرجع PLT-00X يُولّد تلقائيًا ولا يمكن تعديله.": "Core non-stocked products available to all merchants without inventory tracking. Reference PLT-00X is generated automatically and cannot be changed.",
-  "منصة": "Platform",
-  "منضم": "Joined",
-  "موافق عليه": "Approved",
-  "موضوع البريد": "Email subject",
-  "نسيت كلمة المرور؟": "Forgot password?",
-  "نص القالب (بالمتغيرات الديناميكية)": "Template text (with dynamic variables)",
-  "نقل المخزون بين المواقع": "Transfer stock between locations",
-  "نقل مخزون": "Transfer stock",
-  "نوع": "Type",
-  "نوع التعديل": "Adjustment type",
-  "نوع القالب": "Template type",
-  "هل أنت متأكد من اعتماد طلب السحب": "Are you sure you want to approve the withdrawal request",
-  "هيئة": "Entity",
-  "وصف المنتج (اختياري — 1000 حرف)": "Product description (optional — 1000 chars)",
-  "وضع العرض": "Display mode",
-  "يجب أن يكون اسم المنتج بين 3 و 100 حرف": "Product name must be between 3 and 100 characters",
-  "يجب أن يكون مبلغ التعديل 0.01 على الأقل": "Adjustment amount must be at least 0.01",
-  "يجب أن يكون مبلغ التعديل أقل من 100,000": "Adjustment amount must be less than 100,000",
-  "يجب أن يكون وصف المنتج أقل من 1000 حرف": "Product description must be under 1000 characters",
-  "English": "English",
-  "IP": "IP",
-  "SKU": "SKU",
+export const AR: Record<string, string> = arDict as Record<string, string>
+export const EN: Record<string, string> = enDict as Record<string, string>
+
+// مزامنة حالة المتجر (Zustand) مع i18next
+usePrefsStore.subscribe((state) => {
+  if (i18n.language !== state.lang) {
+    i18n.changeLanguage(state.lang)
+  }
+})
+
+// مزامنة i18next مع حالة المتجر (Zustand)
+i18n.on('languageChanged', (lng) => {
+  const currentLang = lng.startsWith('ar') ? 'ar' : 'en'
+  const storeLang = usePrefsStore.getState().lang
+  if (storeLang !== currentLang) {
+    usePrefsStore.getState().setLang(currentLang)
+  }
+})
+
+function resolveTranslation(key: string, dict: Record<string, string>): string {
+  if (!key) return ''
+  if (typeof dict[key] === 'string') {
+    return dict[key]
+  }
+
+  // Handle compound strings separated by ' — ' (em dash or en dash)
+  if (key.includes(' — ')) {
+    const parts = key.split(' — ')
+    const translatedParts = parts.map(p => {
+      const trimmed = p.trim()
+      return dict[trimmed] ?? trimmed
+    })
+    return translatedParts.join(' — ')
+  }
+
+  // Handle compound strings separated by ' - '
+  if (key.includes(' - ')) {
+    const parts = key.split(' - ')
+    const translatedParts = parts.map(p => {
+      const trimmed = p.trim()
+      return dict[trimmed] ?? trimmed
+    })
+    return translatedParts.join(' - ')
+  }
+
+  // Handle bullet list items starting with '• '
+  if (key.startsWith('• ')) {
+    const rest = key.slice(2).trim()
+    return '• ' + resolveTranslation(rest, dict)
+  }
+
+  return key
 }
 
+/**
+ * دالة الترجمة المباشرة المتزامنة
+ */
+export function translate(key: string, lang?: 'ar' | 'en'): string {
+  if (!key) return ''
+  const currentLang = lang || (i18n.language?.startsWith('ar') ? 'ar' : 'en')
+  const dict = currentLang === 'ar' ? AR : EN
+  const resolved = resolveTranslation(key, dict)
+  if (resolved !== key) return resolved
+  return i18n.t(key, { defaultValue: key })
+}
+
+/**
+ * الخطاف الأساسي للترجمة الفورية المباشرة في المكونات
+ */
 export function useT() {
+  const { t } = useReactI18n()
   const lang = usePrefsStore(s => s.lang)
-  return (s: string) => (lang === 'en' ? EN[s] ?? s : s)
+
+  return (key: string, defaultValue?: string) => {
+    if (!key) return ''
+    const dict = lang === 'ar' ? AR : EN
+    if (dict) {
+      const resolved = resolveTranslation(key, dict)
+      if (resolved !== key) {
+        return resolved
+      }
+    }
+    return t(key, defaultValue ?? key)
+  }
 }
+
+/**
+ * خطاف useTranslation الرسمي من react-i18next مع توافق تام
+ */
+export function useTranslation() {
+  const res = useReactI18n()
+  const setLang = usePrefsStore(s => s.setLang)
+
+  return {
+    ...res,
+    t: (key: string, defaultValue?: string) => {
+      if (!key) return ''
+      const lang = res.i18n.language?.startsWith('ar') ? 'ar' : 'en'
+      const dict = lang === 'ar' ? AR : EN
+      if (dict) {
+        const resolved = resolveTranslation(key, dict)
+        if (resolved !== key) return resolved
+      }
+      return res.t(key, defaultValue ?? key)
+    },
+    i18n: {
+      ...res.i18n,
+      changeLanguage: async (lng: string) => {
+        const standardLng = lng.startsWith('ar') ? 'ar' : 'en'
+        setLang(standardLng)
+        return res.i18n.changeLanguage(standardLng)
+      }
+    }
+  }
+}
+
+export default useTranslation

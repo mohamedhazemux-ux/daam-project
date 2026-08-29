@@ -41,10 +41,10 @@ export default function ApprovalsPage() {
   const [assignFor, setAssignFor] = useState<Approval | null>(null)
   const [asForm, setAsForm] = useState({ approver: '', reason: '' })
   const [asErr, setAsErr] = useState('')
-  const approve = useMutation({ mutationFn: (v: { id: string; extra: typeof aForm }) => approvalsService.approve(v.id, v.extra), onSuccess: () => { toast.success('تم التحقق بنجاح: تم اعتماد الطلب بنجاح'); invalidate(); setApproving(null) } })
-  const reject = useMutation({ mutationFn: (v: { id: string; r: typeof rForm }) => approvalsService.reject(v.id, v.r), onSuccess: () => { toast.success('تم التحقق بنجاح: تم رفض الطلب بنجاح'); invalidate(); setRejecting(null) } })
-  const reqInfo = useMutation({ mutationFn: (v: { id: string; info: string; deadline: string }) => approvalsService.requestInfo(v.id, v.info, v.deadline), onSuccess: () => { toast.success('تم التحقق بنجاح: تم طلب معلومات إضافية بنجاح'); invalidate(); setInfoFor(null) } })
-  const assign = useMutation({ mutationFn: (v: { id: string; approver: string; reason: string }) => approvalsService.assign(v.id, v.approver, v.reason), onSuccess: () => { toast.success('تم التحقق بنجاح: تم إسناد الطلب للمشرف الجديد بنجاح'); invalidate(); setAssignFor(null) } })
+  const approve = useMutation({ mutationFn: (v: { id: string; extra: typeof aForm }) => approvalsService.approve(v.id, v.extra), onSuccess: () => { toast.success(t('تم اعتماد الطلب بنجاح')); invalidate(); setApproving(null) } })
+  const reject = useMutation({ mutationFn: (v: { id: string; r: typeof rForm }) => approvalsService.reject(v.id, v.r), onSuccess: () => { toast.success(t('تم رفض الطلب بنجاح')); invalidate(); setRejecting(null) } })
+  const reqInfo = useMutation({ mutationFn: (v: { id: string; info: string; deadline: string }) => approvalsService.requestInfo(v.id, v.info, v.deadline), onSuccess: () => { toast.success(t('تم طلب معلومات إضافية بنجاح')); invalidate(); setInfoFor(null) } })
+  const assign = useMutation({ mutationFn: (v: { id: string; approver: string; reason: string }) => approvalsService.assign(v.id, v.approver, v.reason), onSuccess: () => { toast.success(t('تم إسناد الطلب للمشرف الجديد بنجاح')); invalidate(); setAssignFor(null) } })
   const cards = dash ? [
     { l: t('الكل'), v: dash.total, onClick: () => { setType(''); setUrgency(''); setPage(1) } },
     { l: t('تأهيل تاجر'), v: dash.onboarding, onClick: () => { setType('تأهيل تاجر'); setUrgency(''); setPage(1) } },
@@ -57,19 +57,19 @@ export default function ApprovalsPage() {
   ] : []
   const columns: ColumnDef<Approval, unknown>[] = [
     { accessorKey: 'id', header: t('المعرف'), cell: ({ row }) => <b>{row.original.id}</b> },
-    { id: 'type', header: t('النوع'), cell: ({ row }) => <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">{row.original.type}</span> },
-    { accessorKey: 'who', header: t('مقدم الطلب') },
-    { accessorKey: 'title', header: t('الوصف'), cell: ({ row }) => <span className="block max-w-[260px] truncate">{row.original.title}</span> },
+    { id: 'type', header: t('النوع'), cell: ({ row }) => <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-extrabold text-blue-700">{t(row.original.type)}</span> },
+    { id: 'who', header: t('مقدم الطلب'), cell: ({ row }) => t(row.original.who) },
+    { id: 'title', header: t('الوصف'), cell: ({ row }) => <span className="block max-w-[260px] truncate">{t(row.original.title)}</span> },
     { id: 'urgency', header: t('الإلحاح'), cell: ({ row }) => <StatusBadge value={row.original.urgency} /> },
     { id: 'date', header: t('التاريخ'), cell: ({ row }) => arDate(row.original.date) },
     { id: 'days', header: t('أيام التعليق'), cell: ({ row }) => <span className={row.original.days > 3 ? 'font-black text-destructive' : 'font-bold'}>{row.original.days} {row.original.days > 3 && '⚠'}</span> },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
       <ActionButtons actions={[
-        { icon: Eye, label: 'عرض التفاصيل', onClick: () => navigate('/records/approval/' + row.original.id) },
-        { icon: CheckCircle, label: 'اعتماد الطلب', onClick: () => { setApproving(row.original); setAForm({ notes: '', qty: row.original.qty ?? 0, cost: 0, date: todayISO(), staff: '' }); setAErr('') } },
-        { icon: XCircle, label: 'رفض الطلب', variant: 'destructive', onClick: () => { setRejecting(row.original); setRForm({ reason: '', category: '', resubmit: 'نعم' }); setRErr('') } },
-        { icon: HelpCircle, label: 'طلب معلومات إضافية', onClick: () => { setInfoFor(row.original); setIForm({ info: '', deadline: '' }); setIErr('') } },
-        { icon: Send, label: 'إسناد لمشرف آخر', onClick: () => { setAssignFor(row.original); setAsForm({ approver: '', reason: '' }); setAsErr('') } },
+        { icon: Eye, label: t('عرض التفاصيل'), onClick: () => navigate('/records/approval/' + row.original.id) },
+        { icon: CheckCircle, label: t('اعتماد الطلب'), onClick: () => { setApproving(row.original); setAForm({ notes: '', qty: row.original.qty ?? 0, cost: 0, date: todayISO(), staff: '' }); setAErr('') } },
+        { icon: XCircle, label: t('رفض الطلب'), variant: 'destructive', onClick: () => { setRejecting(row.original); setRForm({ reason: '', category: '', resubmit: 'نعم' }); setRErr('') } },
+        { icon: HelpCircle, label: t('طلب معلومات إضافية'), onClick: () => { setInfoFor(row.original); setIForm({ info: '', deadline: '' }); setIErr('') } },
+        { icon: Send, label: t('إسناد لمشرف آخر'), onClick: () => { setAssignFor(row.original); setAsForm({ approver: '', reason: '' }); setAsErr('') } },
       ]} />) },
   ]
   return (
@@ -102,111 +102,111 @@ export default function ApprovalsPage() {
             </div>
           } />
       </div>
-      <Modal open={!!approving} onClose={() => setApproving(null)} title={'اعتماد — ' + (approving?.id ?? '')}
+      <Modal open={!!approving} onClose={() => setApproving(null)} title={t('اعتماد الطلب') + ' — ' + (approving?.id ?? '')}
         footer={<>
-          <Button variant="outline" onClick={() => setApproving(null)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => setApproving(null)}>{t('إلغاء')}</Button>
           <Button disabled={approve.isPending} onClick={() => {
             const a = approving!
             if ((a.type === 'إضافة مخزون' || a.type === 'سحب مخزون')) {
-              if (!aForm.qty || aForm.qty < 1) { setAErr('الكمية المعتمدة مطلوبة (1 على الأقل)'); return }
-              if (a.qty && aForm.qty > a.qty) { setAErr('الكمية المعتمدة يجب أن تكون أقل من أو تساوي الكمية المطلوبة'); return }
+              if (!aForm.qty || aForm.qty < 1) { setAErr(t('الكمية المعتمدة مطلوبة (1 على الأقل)')); return }
+              if (a.qty && aForm.qty > a.qty) { setAErr(t('الكمية المعتمدة يجب أن تكون أقل من أو تساوي الكمية المطلوبة')); return }
             }
             if (a.type === 'طلب خدمة') {
-              if (!aForm.cost || aForm.cost < 0.01) { setAErr('التكلفة الفعلية مطلوبة (0.01 على الأقل)'); return }
-              if (aForm.cost > 100000) { setAErr('التكلفة الفعلية يجب أن تكون أقل من 100,000'); return }
-              if (aForm.date < todayISO()) { setAErr('التاريخ المجدول يجب أن يكون اليوم أو مستقبلًا'); return }
-              if (!aForm.staff) { setAErr('الموظف المسؤول مطلوب'); return }
+              if (!aForm.cost || aForm.cost < 0.01) { setAErr(t('التكلفة الفعلية مطلوبة (0.01 على الأقل)')); return }
+              if (aForm.cost > 100000) { setAErr(t('التكلفة الفعلية يجب أن تكون أقل من 100,000')); return }
+              if (aForm.date < todayISO()) { setAErr(t('التاريخ المجدول يجب أن يكون اليوم أو مستقبلًا')); return }
+              if (!aForm.staff) { setAErr(t('الموظف المسؤول مطلوب')); return }
             }
-            if (aForm.notes.length > 300) { setAErr('ملاحظات الاعتماد يجب أن تكون أقل من 300 حرف'); return }
+            if (aForm.notes.length > 300) { setAErr(t('ملاحظات الاعتماد يجب أن تكون أقل من 300 حرف')); return }
             setAErr('')
             approve.mutate({ id: a.id, extra: aForm })
-          }}>تأكيد الاعتماد</Button>
+          }}>{t('تأكيد الاعتماد')}</Button>
         </>}>
         {approving && <>
           <p className="mb-3 text-sm font-bold">{approving.title}</p>
           <div className="grid gap-3 md:grid-cols-2">
             {(approving.type === 'إضافة مخزون' || approving.type === 'سحب مخزون') && (
-              <div><Label>الكمية المعتمدة (بحد أقصى {approving.qty ?? '—'}) <span className="text-destructive">*</span></Label><Input type="number" min={1} value={aForm.qty || ''} onChange={e => setAForm(f => ({ ...f, qty: +e.target.value }))} /></div>
+              <div><Label>{t('الكمية المعتمدة')} ({t('بحد أقصى')} {approving.qty ?? '—'}) <span className="text-destructive">*</span></Label><Input type="number" min={1} value={aForm.qty || ''} onChange={e => setAForm(f => ({ ...f, qty: +e.target.value }))} /></div>
             )}
             {approving.type === 'طلب خدمة' && <>
-              <div><Label>التكلفة الفعلية <span className="text-destructive">*</span></Label><Input type="number" step="0.01" value={aForm.cost || ''} onChange={e => setAForm(f => ({ ...f, cost: +e.target.value }))} /></div>
-              <div><Label>التاريخ المجدول <span className="text-destructive">*</span></Label><Input type="date" value={aForm.date} onChange={e => setAForm(f => ({ ...f, date: e.target.value }))} /></div>
-              <div><Label>الموظف المسؤول <span className="text-destructive">*</span></Label>
+              <div><Label>{t('التكلفة الفعلية')} <span className="text-destructive">*</span></Label><Input type="number" step="0.01" value={aForm.cost || ''} onChange={e => setAForm(f => ({ ...f, cost: +e.target.value }))} /></div>
+              <div><Label>{t('التاريخ المجدول')} <span className="text-destructive">*</span></Label><Input type="date" value={aForm.date} onChange={e => setAForm(f => ({ ...f, date: e.target.value }))} /></div>
+              <div><Label>{t('الموظف المسؤول')} <span className="text-destructive">*</span></Label>
                 <select className={selectCls + ' w-full'} value={aForm.staff} onChange={e => setAForm(f => ({ ...f, staff: e.target.value }))}>
-                  <option value="">اختر الموظف...</option>
+                  <option value="">{t('اختر الموظف...')}</option>
                   {STAFF.map(s => <option key={s} value={s}>{s}</option>)}
                 </select></div>
             </>}
-            <div className="md:col-span-2"><Label>ملاحظات الاعتماد (اختياري — 300 حرف)</Label><Textarea value={aForm.notes} maxLength={300} onChange={e => setAForm(f => ({ ...f, notes: e.target.value }))} /></div>
+            <div className="md:col-span-2"><Label>{t('ملاحظات الاعتماد (اختياري — 300 حرف)')}</Label><Textarea value={aForm.notes} maxLength={300} onChange={e => setAForm(f => ({ ...f, notes: e.target.value }))} /></div>
           </div>
           {aErr && <p className="mt-2 text-xs font-bold text-destructive">{aErr}</p>}
         </>}
       </Modal>
-      <Modal open={!!rejecting} onClose={() => setRejecting(null)} title={'رفض — ' + (rejecting?.id ?? '')}
+      <Modal open={!!rejecting} onClose={() => setRejecting(null)} title={t('رفض الطلب') + ' — ' + (rejecting?.id ?? '')}
         footer={<>
-          <Button variant="outline" onClick={() => setRejecting(null)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => setRejecting(null)}>{t('إلغاء')}</Button>
           <Button variant="destructive" disabled={reject.isPending} onClick={() => {
             const v = rForm.reason.trim()
-            if (!v) { setRErr('سبب الرفض مطلوب'); return }
-            if (v.length < 10 || v.length > 500) { setRErr('يجب أن يكون سبب الرفض بين 10 و 500 حرف'); return }
-            if (!rForm.category) { setRErr('تصنيف الرفض مطلوب'); return }
+            if (!v) { setRErr(t('سبب الرفض مطلوب')); return }
+            if (v.length < 10 || v.length > 500) { setRErr(t('يجب أن يكون سبب الرفض بين 10 و 500 حرف')); return }
+            if (!rForm.category) { setRErr(t('تصنيف الرفض مطلوب')); return }
             setRErr('')
             reject.mutate({ id: rejecting!.id, r: rForm })
-          }}>تأكيد الرفض</Button>
+          }}>{t('تأكيد الرفض')}</Button>
         </>}>
         <div className="grid gap-3">
-          <div><Label>سبب الرفض <span className="text-destructive">*</span> (10 – 500 حرف)</Label><Textarea value={rForm.reason} maxLength={500} onChange={e => setRForm(f => ({ ...f, reason: e.target.value }))} /></div>
-          <div><Label>تصنيف الرفض <span className="text-destructive">*</span></Label>
+          <div><Label>{t('سبب الرفض')} <span className="text-destructive">*</span> (10 – 500 {t('حرف')})</Label><Textarea value={rForm.reason} maxLength={500} onChange={e => setRForm(f => ({ ...f, reason: e.target.value }))} /></div>
+          <div><Label>{t('تصنيف الرفض')} <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={rForm.category} onChange={e => setRForm(f => ({ ...f, category: e.target.value }))}>
-              <option value="">اختر التصنيف...</option>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="">{t('اختر التصنيف...')}</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{t(c)}</option>)}
             </select></div>
-          <div><Label>السماح بإعادة التقديم <span className="text-destructive">*</span></Label>
+          <div><Label>{t('السماح بإعادة التقديم')} <span className="text-destructive">*</span></Label>
             <div className="flex gap-5 pt-2">
-              <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={rForm.resubmit === 'نعم'} onChange={() => setRForm(f => ({ ...f, resubmit: 'نعم' }))} /> نعم</label>
-              <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={rForm.resubmit === 'لا'} onChange={() => setRForm(f => ({ ...f, resubmit: 'لا' }))} /> لا</label>
+              <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={rForm.resubmit === 'نعم'} onChange={() => setRForm(f => ({ ...f, resubmit: 'نعم' }))} /> {t('نعم')}</label>
+              <label className="flex items-center gap-2 text-sm font-bold"><input type="radio" checked={rForm.resubmit === 'لا'} onChange={() => setRForm(f => ({ ...f, resubmit: 'لا' }))} /> {t('لا')}</label>
             </div></div>
         </div>
         {rErr && <p className="mt-2 text-xs font-bold text-destructive">{rErr}</p>}
       </Modal>
-      <Modal open={!!infoFor} onClose={() => setInfoFor(null)} title={'طلب معلومات — ' + (infoFor?.id ?? '')}
+      <Modal open={!!infoFor} onClose={() => setInfoFor(null)} title={t('طلب معلومات إضافية') + ' — ' + (infoFor?.id ?? '')}
         footer={<>
-          <Button variant="outline" onClick={() => setInfoFor(null)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => setInfoFor(null)}>{t('إلغاء')}</Button>
           <Button disabled={reqInfo.isPending} onClick={() => {
             const v = iForm.info.trim()
-            if (!v) { setIErr('المعلومات المطلوبة مطلوبة'); return }
-            if (v.length < 10 || v.length > 500) { setIErr('يجب أن تكون المعلومات بين 10 و 500 حرف'); return }
-            if (!iForm.deadline) { setIErr('الموعد النهائي مطلوب'); return }
-            if (iForm.deadline < todayISO()) { setIErr('الموعد النهائي يجب أن يكون اليوم أو مستقبلًا'); return }
+            if (!v) { setIErr(t('المعلومات المطلوبة مطلوبة')); return }
+            if (v.length < 10 || v.length > 500) { setIErr(t('يجب أن تكون المعلومات بين 10 و 500 حرف')); return }
+            if (!iForm.deadline) { setIErr(t('الموعد النهائي مطلوب')); return }
+            if (iForm.deadline < todayISO()) { setIErr(t('الموعد النهائي يجب أن يكون اليوم أو مستقبلًا')); return }
             setIErr('')
             reqInfo.mutate({ id: infoFor!.id, info: v, deadline: iForm.deadline })
-          }}>إرسال الطلب</Button>
+          }}>{t('إرسال الطلب')}</Button>
         </>}>
         <div className="grid gap-3">
-          <div><Label>المعلومات المطلوبة <span className="text-destructive">*</span> (10 – 500 حرف)</Label><Textarea value={iForm.info} maxLength={500} onChange={e => setIForm(f => ({ ...f, info: e.target.value }))} /></div>
-          <div><Label>الموعد النهائي للاستجابة <span className="text-destructive">*</span></Label><Input type="date" value={iForm.deadline} onChange={e => setIForm(f => ({ ...f, deadline: e.target.value }))} /></div>
+          <div><Label>{t('المعلومات المطلوبة')} <span className="text-destructive">*</span> (10 – 500 {t('حرف')})</Label><Textarea value={iForm.info} maxLength={500} onChange={e => setIForm(f => ({ ...f, info: e.target.value }))} /></div>
+          <div><Label>{t('الموعد النهائي للاستجابة')} <span className="text-destructive">*</span></Label><Input type="date" value={iForm.deadline} onChange={e => setIForm(f => ({ ...f, deadline: e.target.value }))} /></div>
         </div>
         {iErr && <p className="mt-2 text-xs font-bold text-destructive">{iErr}</p>}
       </Modal>
-      <Modal open={!!assignFor} onClose={() => setAssignFor(null)} title={'إسناد — ' + (assignFor?.id ?? '')}
+      <Modal open={!!assignFor} onClose={() => setAssignFor(null)} title={t('إسناد لمشرف آخر') + ' — ' + (assignFor?.id ?? '')}
         footer={<>
-          <Button variant="outline" onClick={() => setAssignFor(null)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => setAssignFor(null)}>{t('إلغاء')}</Button>
           <Button disabled={assign.isPending} onClick={() => {
-            if (!asForm.approver) { setAsErr('المعتمد الجديد مطلوب'); return }
+            if (!asForm.approver) { setAsErr(t('المعتمد الجديد مطلوب')); return }
             const v = asForm.reason.trim()
-            if (!v) { setAsErr('سبب الإسناد مطلوب'); return }
-            if (v.length < 10 || v.length > 300) { setAsErr('يجب أن يكون سبب الإسناد بين 10 و 300 حرف'); return }
+            if (!v) { setAsErr(t('سبب الإسناد مطلوب')); return }
+            if (v.length < 10 || v.length > 300) { setAsErr(t('يجب أن يكون سبب الإسناد بين 10 و 300 حرف')); return }
             setAsErr('')
             assign.mutate({ id: assignFor!.id, approver: asForm.approver, reason: v })
-          }}>تأكيد الإسناد</Button>
+          }}>{t('تأكيد الإسناد')}</Button>
         </>}>
         <div className="grid gap-3">
-          <div><Label>المعتمد الجديد <span className="text-destructive">*</span></Label>
+          <div><Label>{t('المعتمد الجديد')} <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={asForm.approver} onChange={e => setAsForm(f => ({ ...f, approver: e.target.value }))}>
-              <option value="">اختر المعتمد...</option>
+              <option value="">{t('اختر المعتمد...')}</option>
               {APPROVERS.map(a => <option key={a} value={a}>{a}</option>)}
             </select></div>
-          <div><Label>سبب الإسناد <span className="text-destructive">*</span> (10 – 300 حرف)</Label><Textarea value={asForm.reason} maxLength={300} onChange={e => setAsForm(f => ({ ...f, reason: e.target.value }))} /></div>
+          <div><Label>{t('سبب الإسناد')} <span className="text-destructive">*</span> (10 – 300 {t('حرف')})</Label><Textarea value={asForm.reason} maxLength={300} onChange={e => setAsForm(f => ({ ...f, reason: e.target.value }))} /></div>
         </div>
         {asErr && <p className="mt-2 text-xs font-bold text-destructive">{asErr}</p>}
       </Modal>

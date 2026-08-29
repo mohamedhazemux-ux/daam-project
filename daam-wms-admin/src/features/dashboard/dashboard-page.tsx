@@ -1,4 +1,4 @@
-﻿import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,8 +12,9 @@ function Line({ data }: { data: number[] }) {
   return <svg viewBox="0 0 300 80" className="h-28 w-full text-foreground" preserveAspectRatio="none"><polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2" /></svg>
 }
 function HBars({ data }: { data: [string, number][] }) {
+  const t = useT()
   const max = Math.max(...data.map(d => d[1]), 1)
-  return <div className="space-y-2">{data.map(([l, v]) => <div key={l}><p className="mb-0.5 flex justify-between text-[11px] font-bold"><span className="truncate">{l}</span><span>{money(v)}</span></p><div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-foreground" style={{ width: (v / max) * 100 + '%' }} /></div></div>)}</div>
+  return <div className="space-y-2">{data.map(([l, v]) => <div key={l}><p className="mb-0.5 flex justify-between text-[11px] font-bold"><span className="truncate">{t(l)}</span><span>{money(v)}</span></p><div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-foreground" style={{ width: (v / max) * 100 + '%' }} /></div></div>)}</div>
 }
 export default function DashboardPage() {
   const t = useT()

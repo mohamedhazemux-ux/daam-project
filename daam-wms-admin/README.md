@@ -1,75 +1,132 @@
-# React + TypeScript + Vite
+# Daam WMS & Merchant Portal | نظام إدارة المستودعات وبوابة التجار الداعمة
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+منظومة متكاملة لإدارة المستودعات الذكية والخدمات اللوجستية وبوابة التجار (B2B Warehouse Management System & Merchant Portal). مبنية بأحدث معايير الويب التفاعلية لتقديم تجربة مستخدم سريعة، سلسة، ومطابقة للأنظمة والمعايير السعودية (بما فيها رمز الريال السعودي `﷼` المعتمد ودعم كامل للغتين العربية والإنجليزية RTL/LTR).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 المميزات الرئيسية (Key Features)
 
-## React Compiler
+1. **بوابة الإدارة المركزية (Admin Portal)**:
+   - لوحة تحكم ذكية ومؤشرات أداء متقدمة (KPIs) وإحصائيات تفاعلية.
+   - إدارة التجار ومراجعة الحسابات وتعيين حدود التخزين والوثائق.
+   - إدارة المخزون، المستودعات، المواقع التخزينية، وحركات الجرد.
+   - دورة حياة متكاملة لمعالجة الطلبات، التغليف، وتعيين المنتقين.
+   - إدارة الشحنات وبوالص الشحن (Shipping Labels) وقوائم التجميع (Packing Slips) بصيغة PDF.
+   - معالجة طلبات الإرجاع، الفحص المخبري، والاسترداد المالي.
+   - المحفظة المالية، الفواتير الدورية، وفوترة الخدمات اللوجستية.
+   - محرك الموافقات متعدد المستويات (Approvals System).
+   - مركز الإشعارات الفوري وسجلات التدقيق والأمان الشاملة (Audit Logs).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. **بوابة التاجر (Merchant Portal)**:
+   - لوحة تحكم مخصصة لكل متجر لمتابعة الطلبات، المخزون، والمبيعات.
+   - إدارة الكتالوج والمنتجات والربط مع منتجات المنصة العامة.
+   - إنشاء ومتابعة الطلبات وتحديد مسؤولية الشحن (شحن المنصة / الشحن الذاتي).
+   - رفع بوالص الشحن وتتبع أرقام الشحنات.
+   - طلبات الخدمات الإضافية والتخزين المبرد والمخصص.
+   - المحفظة الرقمية، طلبات السحب البنكي، والاطلاع على الفواتير.
+   - تقارير تفصيلية مع إمكانية التصدير (Excel/CSV).
 
-## Expanding the ESLint configuration
+3. **تجربة استخدام متقدمة (UX & Localization)**:
+   - دعم كامل وفوري للغتين **العربية (RTL)** و **الإنجليزية (LTR)** عبر 1,818+ مفتاح ترجمة.
+   - الوضع الليلي والنهاري (Dark / Light Theme).
+   - الاعتماد الكامل على رمز العملة السعودي الرسمي `﷼` / `SAR`.
+   - تواريخ ديناميكية بالشهور المترجمة عبر `arDate()`.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠 التقنيات المستخدمة (Tech Stack)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: Tailwind CSS, Class Variance Authority, Tailwind Merge
+- **Icons**: Lucide React
+- **State & Data Fetching**: TanStack Query (React Query), Zustand
+- **Tables & Forms**: TanStack Table, Custom UI Component primitives
+- **Notifications & Documents**: Sonner Toasts, jsPDF, Print/Export utilities
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
 
+## 🔌 دليل ربط الواجهة الخلفية (Backend API Integration Guide)
+
+المنظومة مهيأة بالكامل للربط المباشر مع خوادم الـ Backend (Node.js, Laravel, Python, Go, Java, .NET) عبر طبقة HTTP موحدة ومعزولة (`src/services/`).
+
+### 1. إعداد المتغيرات البيئية (Environment Variables)
+
+قم بإنشاء ملف `.env` في المجلد الرئيسي للمشروع:
+
+```env
+VITE_API_BASE_URL=https://api.yourdomain.com/v1
+VITE_APP_ENV=production
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. معمارية الـ HTTP Client (`src/services/http.ts`)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- جميع الطلبات تمر تلقائياً عبر `apiRequest<T>(endpoint, options)`.
+- يتم إرفاق رمز التوثيق تلقائياً في الترويسة:
+  ```http
+  Authorization: Bearer <daam-access-token>
+  Accept: application/json
+  Content-Type: application/json
+  ```
+- معالجة تلقائية لأخطاء `401 Unauthorized` وتوجيه المستخدم لتسجيل الدخول.
+- معالجة أخطاء الـ API وإرجاع `ApiError` بكود الحالة والرسالة المترجمة.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 3. خريطة مسارات الـ API (Endpoints Map)
 
+| الوحدة (Module) | المسار (API Endpoint) | الوصف |
+| :--- | :--- | :--- |
+| **المصادقة (Auth)** | `POST /auth/login` | تسجيل الدخول واستلام التوكن |
+| | `POST /auth/merchant-login` | تسجيل دخول التاجر |
+| | `POST /auth/logout` | إنهاء الجلسة |
+| **الطلبات (Orders)** | `GET /orders` | جلب قائمة الطلبات مع التصفية والترقيم |
+| | `GET /orders/:id` | تفاصيل الطلب وسجل التتبع |
+| | `POST /orders/:id/accept` | قبول الطلب |
+| | `POST /orders/:id/pack` | نقل الطلب للتغليف |
+| | `POST /orders/:id/assign-picker` | إسناد الطلب للمنتقي |
+| **المخزون (Inventory)**| `GET /inventory` | جلب المخزون وحركات الجرد |
+| | `POST /inventory/adjust` | تسوية المخزون |
+| **المرتجعات (Returns)** | `GET /returns` | طلبات الإرجاع والفحص |
+| | `POST /returns/:id/inspect` | تسجيل نتيجة الفحص |
+| **المالية (Finance)** | `GET /finance/overview` | مؤشرات المحفظة والعمليات |
+| | `POST /finance/withdraw` | طلب سحب مالي |
+| **الخدمات (Services)** | `GET /services/requests` | طلبات الخدمات اللوجستية |
+| | `POST /services/requests` | تقديم طلب خدمة جديدة |
+| **سجلات التدقيق (Logs)**| `GET /audit-logs` | استعراض سجلات التدقيق والأمان |
+
+---
+
+## 💻 التشغيل والتطوير (Getting Started)
+
+### تثبيت الاعتماديات:
+```bash
+npm install
+```
+
+### تشغيل خادم التطوير:
+```bash
+npm run dev
+```
+
+### بناء حزمة الإنتاج:
+```bash
+npm run build
+```
+
+---
+
+## 📂 هيكل المشروع (Project Structure)
+
+```
+daam-wms-admin/
+├── src/
+│   ├── app/           # توجيه الصفحات وإعدادات المسارات (Routing)
+│   ├── components/    # المكونات المشتركة، القوائم، وتنسيقات الجداول والشارات
+│   ├── features/      # وحدات النظام (طلبات، مخزون، تجار، مالية، خدمات، إعدادات)
+│   ├── lib/           # أدوات مساعدة، إدارة اللغات والترجمة، ومولدات PDF
+│   ├── locales/       # قواميس اللغات الكاملة (ar.json, en.json)
+│   ├── mocks/         # قاعدة البيانات التجريبية وبيئة المحاكاة
+│   ├── services/      # طبقة الاتصال بالـ API والخدمات
+│   ├── store/         # إدارة الحالة العامة (Zustand Stores)
+│   └── types/         # تعريفات TypeScript ونماذج البيانات
+├── scripts/           # سكربتات التدقيق ومزامنة القواميس
+└── package.json
 ```

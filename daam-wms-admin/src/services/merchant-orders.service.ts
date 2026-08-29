@@ -5,7 +5,7 @@ import { merchantProducts } from './merchant-products.service'
 import { todayISO } from '@/lib/utils'
 import type { ListQuery, ListResult } from '@/types'
 export interface OrderItem { name: string; qty: number; price: number; notes?: string; platform?: boolean }
-export interface MerchantOrder { ref: string; m: string; cust: string; address: string; date: string; status: 'معلق' | 'قيد المعالجة' | 'مكتمل' | 'ملغي'; shipResp: 'منصة' | 'ذاتي'; method?: string; shipCost?: number; tracking?: string; label?: string; notes?: string; attachments?: string[]; items: OrderItem[]; total: number; log: string[] }
+export interface MerchantOrder { ref: string; m: string; cust: string; address: string; date: string; status: 'معلق' | 'قيد التنفيذ' | 'قيد التغليف' | 'جاهز للاستلام' | 'قيد التوصيل' | 'مكتمل' | 'مرفوض' | 'ملغي' | string; shipResp: 'منصة' | 'ذاتي'; method?: string; shipCost?: number; tracking?: string; label?: string; notes?: string; attachments?: string[]; items: OrderItem[]; total: number; log: string[] }
 const seed = (): MerchantOrder[] => {
   const store = db.merchants[0]?.store ?? ''
   return [

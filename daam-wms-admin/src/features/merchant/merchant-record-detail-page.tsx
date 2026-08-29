@@ -226,7 +226,7 @@ export default function MerchantRecordDetailPage() {
   const submitProductAdjustment = useMutation({
     mutationFn: async () => {
       if (!data) return
-      return inventoryService.adjust(data.name, 'المستودع الرئيسي', adjForm.type, adjForm.qty, adjForm.reason)
+      return inventoryService.adjust(data.name, t('المستودع الرئيسي'), adjForm.type, adjForm.qty, adjForm.reason)
     },
     onSuccess: () => {
       toast.success(t('تم إرسال طلب تعديل المخزون بنجاح'))
@@ -316,7 +316,7 @@ export default function MerchantRecordDetailPage() {
       merchantName: data.cust || t('العميل'),
       trackingNumber: 'RET-TRK-' + (data.ref || data.id).replace(/\D/g, '').slice(-5),
       date: data.date || todayDate(),
-      carrier: 'أرامكس — شحن مرتجع',
+      carrier: t('أرامكس — شحن مرتجع'),
     })
     toast.success(t('تم تجهيز بوليصة الإرجاع بصيغة PDF'))
   }
@@ -660,7 +660,7 @@ export default function MerchantRecordDetailPage() {
                   <tbody className="divide-y font-semibold">
                     {data.items.map((it: any, i: number) => (
                       <tr key={i} className="hover:bg-muted/20">
-                        <td className="p-3 font-bold">{it.d || it.name}</td>
+                        <td className="p-3 font-bold">{t(it.d || it.name)}</td>
                         <td className="p-3 text-center font-extrabold">{it.q || it.qty || 1}</td>
                         <td className="p-3">{money(it.u || it.price || 0)}</td>
                         <td className="p-3 font-bold">{money((it.u || it.price || 0) * (it.q || it.qty || 1))}</td>
@@ -681,7 +681,7 @@ export default function MerchantRecordDetailPage() {
                 .map(([k, v]) => (
                   <div key={k} className="rounded-xl border bg-muted/30 p-3">
                     <p className="text-[11px] font-bold text-muted-foreground">{t(k)}</p>
-                    <p className="mt-0.5 text-xs font-black">{String(v ?? '—')}</p>
+                    <p className="mt-0.5 text-xs font-black">{typeof v === 'string' ? t(v) : String(v ?? '—')}</p>
                   </div>
                 ))}
             </div>
@@ -766,9 +766,9 @@ export default function MerchantRecordDetailPage() {
             <Button 
               disabled={updateProduct.isPending} 
               onClick={() => {
-                if (!productForm.name.trim()) { setProductErr('اسم المنتج مطلوب'); return }
-                if (productForm.name.length < 3) { setProductErr('اسم المنتج قصير للغاية'); return }
-                if (productForm.price <= 0) { setProductErr('يجب أن يكون السعر أكبر من 0'); return }
+                if (!productForm.name.trim()) { setProductErr(t('اسم المنتج مطلوب')); return }
+                if (productForm.name.length < 3) { setProductErr(t('اسم المنتج قصير للغاية')); return }
+                if (productForm.price <= 0) { setProductErr(t('يجب أن يكون السعر أكبر من 0')); return }
                 setProductErr('')
                 updateProduct.mutate()
               }}
@@ -804,7 +804,7 @@ export default function MerchantRecordDetailPage() {
           </div>
           <div>
             <FileUploadWithPreview
-              label="صورة المنتج (اختياري)"
+              label={t('صورة المنتج (اختياري)')}
               files={productForm.img ? [productForm.img] : []}
               accept=".jpg,.png,.jpeg,.webp"
               single
@@ -829,8 +829,8 @@ export default function MerchantRecordDetailPage() {
             <Button 
               disabled={submitProductAdjustment.isPending} 
               onClick={() => {
-                if (!adjForm.reason.trim()) { setAdjErr('سبب التعديل مطلوب'); return }
-                if (adjForm.qty <= 0) { setAdjErr('الكمية يجب أن تكون أكبر من 0'); return }
+                if (!adjForm.reason.trim()) { setAdjErr(t('سبب التعديل مطلوب')); return }
+                if (adjForm.qty <= 0) { setAdjErr(t('الكمية يجب أن تكون أكبر من 0')); return }
                 setAdjErr('')
                 submitProductAdjustment.mutate()
               }}

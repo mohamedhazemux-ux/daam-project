@@ -3,6 +3,7 @@ import { delay, paginate } from './http'
 import { audit } from './audit.service'
 import { merchantReturns } from './merchant-returns.service'
 import { servicesService } from './services.service'
+import { ordersService } from './orders.service'
 import type { Approval, ListQuery, ListResult } from '@/types'
 const URGENCY: Record<string, number> = { 'حرج': 0, 'عاجل': 1, 'عادي': 2 }
 export const approvalsService = {
@@ -19,12 +20,15 @@ export const approvalsService = {
   async dashboard() {
     await delay(200)
     const by = (t: string) => db.approvals.filter(a => a.type === t).length
-    return { total: db.approvals.length, onboarding: by('تأهيل تاجر'), stockAdd: by('إضافة مخزون'), stockRemove: by('سحب مخزون'), returns: by('طلب إرجاع'), withdrawals: by('طلب سحب مالي'), services: by('طلب خدمة'), critical: db.approvals.filter(a => a.urgency !== 'عادي').length }
+    return { total: db.approvals.length, onboarding: by('تأهيل تاجر'), stockAdd: by('إضافة مخزون'), stockRemove: by('سحب مخزون'), returns: by('طلب إرجاع'), withdrawals: by('طلب سحب مالي'), services: by('طلب خدمة'), orders: by('طلب تنفيذ طلبية'), critical: db.approvals.filter(a => a.urgency !== 'عادي').length }
   },
   async approve(id: string, extra: { notes?: string; qty?: number; cost?: number; date?: string; staff?: string }) {
     await delay(400)
     const a = db.approvals.find(x => x.id === id)
     if (!a) throw new Error('طلب الموافقة غير موجود')
+    if (a.sourceRef?.startsWith('ORD-') || a.type === 'طلب تنفيذ طلبية') {
+      if (a.sourceRef) await ordersService.acceptOrder(a.sourceRef)
+    }
     if (a.type === 'طلب خدمة' && a.sourceRef) {
       await servicesService.approveRequest(a.sourceRef, { cost: extra.cost ?? 0, date: extra.date ?? '', staff: extra.staff ?? '', notes: extra.notes ?? '' })
       return
@@ -61,6 +65,9 @@ export const approvalsService = {
     await delay(400)
     const a = db.approvals.find(x => x.id === id)
     if (!a) throw new Error('طلب الموافقة غير موجود')
+    if (a.sourceRef?.startsWith('ORD-') || a.type === 'طلب تنفيذ طلبية') {
+      if (a.sourceRef) await ordersService.rejectOrder(a.sourceRef, r.reason)
+    }
     if (a.type === 'طلب خدمة' && a.sourceRef) {
       await servicesService.rejectRequest(a.sourceRef, r.reason)
       return

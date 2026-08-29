@@ -469,8 +469,11 @@ const MAP: Record<string, string> = {
   'تم الاسترداد': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'ملغي': 'bg-slate-100 text-slate-600 border-slate-200',
   'قيد المعالجة': 'bg-blue-50 text-blue-700 border-blue-200',
-  'مكتمل': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'قيد التنفيذ': 'bg-blue-50 text-blue-700 border-blue-200',
+  'قيد التغليف': 'bg-purple-50 text-purple-700 border-purple-200',
+  'جاهز للاستلام': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'قيد التوصيل': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  'مكتمل': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'مرسلة': 'bg-blue-50 text-blue-700 border-blue-200',
   'تم الإنشاء': 'bg-slate-100 text-slate-600 border-slate-200',
   'مستعرضة': 'bg-violet-50 text-violet-700 border-violet-200',
@@ -478,7 +481,13 @@ const MAP: Record<string, string> = {
   'مدفوعة': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'فشل الدفع': 'bg-red-50 text-red-700 border-red-200',
   'منصة': 'bg-slate-900 text-white border-slate-900',
+  'شحن المنصة': 'bg-slate-900 text-white border-slate-900',
+  'شحن المنصة الداعمة': 'bg-slate-900 text-white border-slate-900',
   'ذاتي': 'bg-slate-100 text-slate-600 border-slate-300',
+  'الشحن الذاتي': 'bg-slate-100 text-slate-600 border-slate-300',
+  'شحن ذاتي': 'bg-slate-100 text-slate-600 border-slate-300',
+  'الشحن القياسي': 'bg-blue-50 text-blue-700 border-blue-200',
+  'الشحن السريع': 'bg-amber-50 text-amber-700 border-amber-200',
   'عادي': 'bg-slate-100 text-slate-600 border-slate-200',
   'عاجل': 'bg-amber-50 text-amber-700 border-amber-200',
   'حرج': 'bg-red-50 text-red-700 border-red-200',
@@ -535,13 +544,24 @@ export function Modal({ open, onClose, title, children, footer, wide }: {
 }) {
   const t = useT()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return
     const active = document.activeElement as HTMLElement | null
     const focusable = () => Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])
-    requestAnimationFrame(() => (focusable()[0] ?? dialogRef.current)?.focus())
+
+    if (!dialogRef.current?.contains(document.activeElement)) {
+      requestAnimationFrame(() => {
+        if (!dialogRef.current?.contains(document.activeElement)) {
+          (focusable()[0] ?? dialogRef.current)?.focus()
+        }
+      })
+    }
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
       if (e.key !== 'Tab') return
       const items = focusable()
       if (!items.length) { e.preventDefault(); return }
@@ -551,8 +571,15 @@ export function Modal({ open, onClose, title, children, footer, wide }: {
     }
     window.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; active?.focus() }
-  }, [open, onClose])
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+      if (active && document.body.contains(active)) {
+        active.focus()
+      }
+    }
+  }, [open])
+
   if (!open) return null
   return (
     <div
@@ -563,7 +590,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: {
     >
       <div ref={dialogRef} tabIndex={-1} className={cn('mx-auto my-8 w-full rounded-2xl border bg-card shadow-2xl animate-fade-up', wide ? 'max-w-3xl' : 'max-w-md')}>
         <div className="flex items-center justify-between border-b px-5 py-4">
-          <h3 className="text-[15px] font-extrabold">{title}</h3>
+          <h3 className="text-[15px] font-extrabold">{t(title)}</h3>
           <button className="inline-flex size-8 items-center justify-center rounded-md border border-input hover:bg-accent" onClick={onClose} aria-label={t('إغلاق')}><X className="size-4" /></button>
         </div>
         <div className="modal-body max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
@@ -620,6 +647,7 @@ export function LineChart({ data, height = 220 }: { data: number[]; height?: num
 }
 
 export function DonutChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const t = useT()
   const total = data.reduce((s, d) => s + d.value, 0)
   if (!total) return <EmptyState title="لا توجد بيانات للعرض" />
   const P = (a: number) => [50 + 38 * Math.cos(((a - 90) * Math.PI) / 180), 50 + 38 * Math.sin(((a - 90) * Math.PI) / 180)] as const
@@ -639,7 +667,7 @@ export function DonutChart({ data }: { data: { label: string; value: number; col
     <svg viewBox="0 0 100 100" className="size-40" role="img" aria-label="توزيع الحالات">
       {arcs}
       <text x="50" y="48" textAnchor="middle" fontSize="14" fontWeight="800" fill="#0a0a0a">{total}</text>
-      <text x="50" y="61" textAnchor="middle" fontSize="7" fill="#71717a" fontWeight="700">إجمالي</text>
+      <text x="50" y="61" textAnchor="middle" fontSize="7" fill="#71717a" fontWeight="700">{t('إجمالي')}</text>
     </svg>
   )
 }
@@ -659,5 +687,42 @@ export function HBarChart({ data, unit }: { data: { label: string; value: number
         </div>
       ))}
     </div>
+  )
+}
+
+/**
+ * أيقونة ورمز عملة الريال السعودي الرسمي الجديد (SAMA Saudi Riyal Official Symbol)
+ */
+export function SaudiRiyalSymbol({ className = 'size-3.5 inline-block align-middle' }: { className?: string }) {
+  return (
+    <span className={cn('inline-flex items-center justify-center font-bold', className)} title="SAR / ﷼" aria-label="ريال سعودي">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-full"
+      >
+        <path d="M6 5c0 5 3 9 8 9.5" />
+        <path d="M14 14.5v4.5" />
+        <path d="M5 8.5h14" />
+        <path d="M5 12h14" />
+      </svg>
+    </span>
+  )
+}
+
+/**
+ * مكون عرض الأسعار مع رمز عملة الريال السعودي
+ */
+export function MoneyDisplay({ value, className }: { value: number; className?: string }) {
+  const formatted = Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (
+    <span className={cn('inline-flex items-center gap-1 font-bold', className)}>
+      <span>{formatted}</span>
+      <span className="font-extrabold text-[1.1em] text-foreground/80 leading-none" title="ريال سعودي">﷼</span>
+    </span>
   )
 }

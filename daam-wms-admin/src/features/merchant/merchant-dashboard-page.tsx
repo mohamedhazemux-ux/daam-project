@@ -22,10 +22,12 @@ function Line({ data }: { data: number[] }) {
   return <svg viewBox="0 0 300 80" className="h-24 w-full text-foreground" preserveAspectRatio="none"><polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2" /></svg>
 }
 function HBars({ data }: { data: [string, number][] }) {
+  const t = useT()
   const max = Math.max(...data.map(d => d[1]), 1)
-  return <div className="space-y-2">{data.map(([l, v]) => <div key={l}><p className="mb-0.5 flex justify-between text-[11px] font-bold"><span className="truncate">{l}</span><span>{v}</span></p><div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-foreground" style={{ width: (v / max) * 100 + '%' }} /></div></div>)}</div>
+  return <div className="space-y-2">{data.map(([l, v]) => <div key={l}><p className="mb-0.5 flex justify-between text-[11px] font-bold"><span className="truncate">{t(l)}</span><span>{v}</span></p><div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-foreground" style={{ width: (v / max) * 100 + '%' }} /></div></div>)}</div>
 }
 function Pie({ data }: { data: [string, number][] }) {
+  const t = useT()
   const total = data.reduce((s, d) => s + d[1], 0) || 1
   const colors = ['#0a0a0a', '#f59e0b', '#10b981', '#ef4444']
   const slices = data.reduce<Array<{ label: string; value: number; from: number; to: number }>>((acc, [label, value]) => {
@@ -36,11 +38,12 @@ function Pie({ data }: { data: [string, number][] }) {
     return acc
   }, [])
   const stops = slices.map((slice, index) => colors[index % colors.length] + ' ' + slice.from + 'deg ' + slice.to + 'deg').join(', ')
-  return <div className="flex items-center gap-4"><div className="size-24 shrink-0 rounded-full" style={{ background: 'conic-gradient(' + stops + ')' }} /><div className="space-y-1">{slices.map((slice, i) => <p key={slice.label} className="flex items-center gap-2 text-[11px] font-bold"><span className="size-2.5 rounded-full" style={{ background: colors[i % 4] }} /> {slice.label} ({slice.value})</p>)}</div></div>
+  return <div className="flex items-center gap-4"><div className="size-24 shrink-0 rounded-full" style={{ background: 'conic-gradient(' + stops + ')' }} /><div className="space-y-1">{slices.map((slice, i) => <p key={slice.label} className="flex items-center gap-2 text-[11px] font-bold"><span className="size-2.5 rounded-full" style={{ background: colors[i % 4] }} /> {t(slice.label)} ({slice.value})</p>)}</div></div>
 }
 function Stacked({ data }: { data: [string, number, number][] }) {
+  const t = useT()
   const max = Math.max(...data.map(d => d[1] + d[2]), 1)
-  return <div className="flex h-28 items-end justify-around gap-4">{data.map(([l, a, r]) => <div key={l} className="flex flex-1 flex-col items-center gap-1"><div className="flex w-8 flex-col justify-end overflow-hidden rounded-md" style={{ height: '100%' }}><div className="bg-amber-400" style={{ height: (r / max) * 100 + '%' }} /><div className="bg-foreground" style={{ height: (a / max) * 100 + '%' }} /></div><p className="text-[10px] font-bold text-muted-foreground">{l}</p></div>)}</div>
+  return <div className="flex h-28 items-end justify-around gap-4">{data.map(([l, a, r]) => <div key={l} className="flex flex-1 flex-col items-center gap-1"><div className="flex w-8 flex-col justify-end overflow-hidden rounded-md" style={{ height: '100%' }}><div className="bg-amber-400" style={{ height: (r / max) * 100 + '%' }} /><div className="bg-foreground" style={{ height: (a / max) * 100 + '%' }} /></div><p className="text-[10px] font-bold text-muted-foreground">{t(l)}</p></div>)}</div>
 }
 export default function MerchantDashboardPage() {
   const t = useT()
@@ -52,11 +55,11 @@ export default function MerchantDashboardPage() {
   const { data, isLoading, isError } = useQuery({ queryKey: ['merchant-dashboard', user?.id], queryFn: () => merchantPortalService.dashboard(user!.id), refetchInterval: 300_000, retry: 1 })
   const { data: an } = useQuery({ queryKey: ['merchant-analytics', user?.id], queryFn: () => merchantProductsService.analytics(user!.store ?? ''), refetchInterval: 300_000 })
   const applyRange = () => {
-    if (from && from > todayISO()) { setDErr('يجب أن يكون تاريخ البداية اليوم أو تاريخًا سابقًا'); return }
-    if (to && to > todayISO()) { setDErr('يجب أن يكون تاريخ النهاية اليوم أو تاريخًا سابقًا'); return }
-    if (from && to && to < from) { setDErr('يجب أن يكون تاريخ النهاية بعد تاريخ البداية أو مساويًا له'); return }
+    if (from && from > todayISO()) { setDErr(t('يجب أن يكون تاريخ البداية اليوم أو تاريخًا سابقًا')); return }
+    if (to && to > todayISO()) { setDErr(t('يجب أن يكون تاريخ النهاية اليوم أو تاريخًا سابقًا')); return }
+    if (from && to && to < from) { setDErr(t('يجب أن يكون تاريخ النهاية بعد تاريخ البداية أو مساويًا له')); return }
     setDErr('')
-    toast.success('تم تطبيق نطاق التاريخ على بيانات لوحة التحكم')
+    toast.success(t('تم تطبيق نطاق التاريخ على بيانات لوحة التحكم'))
   }
   const exportDashboardPdf = () => {
     if (!data) return
@@ -94,7 +97,7 @@ export default function MerchantDashboardPage() {
     }
   }
   if (isLoading) return <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
-  if (isError || !data) return <Card><CardContent className="p-8 text-center text-sm font-extrabold text-destructive">تعذر تحميل لوحة التحكم — سجّل الدخول مجددًا</CardContent></Card>
+  if (isError || !data) return <Card><CardContent className="p-8 text-center text-sm font-extrabold text-destructive">{t('تعذر تحميل لوحة التحكم — سجّل الدخول مجددًا')}</CardContent></Card>
   const bar = data.storageStatus === 'متجاوز' ? 'bg-destructive' : data.storageStatus === 'تحذير' ? 'bg-warning' : 'bg-foreground'
   return (
     <div className="space-y-4">
@@ -111,7 +114,7 @@ export default function MerchantDashboardPage() {
           <div className="mb-2 flex items-center justify-between"><Layers className="size-4 text-muted-foreground" /><StatusBadge value={data.storageStatus} /></div>
           <div className="mb-1 h-2 w-full overflow-hidden rounded-full bg-muted"><div className={'h-full ' + bar} style={{ width: Math.min(100, data.storagePct) + '%' }} /></div>
           <p className={'mt-2 text-lg font-black ' + (data.storagePct >= 100 ? 'text-destructive' : data.storagePct >= 80 ? 'text-amber-600' : '')}>{data.storagePct}%</p>
-          <p className="text-[11px] font-bold text-muted-foreground">استخدام التخزين ({data.used}/{data.limit} {data.unit})</p>
+          <p className="text-[11px] font-bold text-muted-foreground">{t('استخدام التخزين')} ({data.used}/{data.limit} {t(data.unit)})</p>
         </button>
         <button onClick={() => navigate('/merchant/products')} className="rounded-xl border bg-card p-3 text-start shadow-sm"><Package className="mb-2 size-4 text-muted-foreground" /><p className="text-lg font-black">{an?.totalProducts ?? 0}</p><p className="text-[11px] font-bold text-muted-foreground">{t('إجمالي المنتجات')}</p></button>
         <button onClick={() => navigate('/merchant/orders')} className="rounded-xl border bg-card p-3 text-start shadow-sm"><ShoppingCart className="mb-2 size-4 text-muted-foreground" /><p className="text-lg font-black">{an?.activeOrders ?? 0}</p><p className="text-[11px] font-bold text-muted-foreground">{t('طلبات نشطة')}</p></button>

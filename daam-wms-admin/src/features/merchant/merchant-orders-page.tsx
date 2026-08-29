@@ -12,7 +12,7 @@ import { merchantOrdersService, SHIP_METHODS, type MerchantOrder, type OrderItem
 import { merchantSettingsService } from '@/services/merchant-settings.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
-import { downloadCSV, money } from '@/lib/utils'
+import { downloadCSV, money, arDate } from '@/lib/utils'
 import { printShippingLabelPDF } from '@/lib/pdf-utils'
 import { useT } from '@/lib/i18n'
 import { Download, Eye, Plus, Search, Trash2, XCircle } from 'lucide-react'
@@ -50,15 +50,15 @@ export default function MerchantOrdersPage() {
       date: order.date,
       carrier,
     })
-    toast.success(`تم تجهيز بوليصة الشحن عبر (${carrier}) بصيغة PDF`)
+    toast.success(t('تم تجهيز بوليصة الشحن بنجاح بصيغة PDF'))
     setCarrierModalOpen(false)
   }
-  const create = useMutation({ mutationFn: () => merchantOrdersService.create(user!.store!, { ...form, shipResp: form.shipResp as 'منصة' | 'ذاتي', items }), onSuccess: () => { toast.success('تم إنشاء الطلب بنجاح'); invalidate(); setCreateOpen(false) } })
-  const cancel = useMutation({ mutationFn: (ref: string) => merchantOrdersService.cancel(ref), onSuccess: () => { toast.success('تم إلغاء الطلب بنجاح'); invalidate(); setCancelling(null); setViewing(null) }, onError: e => toast.error((e as Error).message) })
+  const create = useMutation({ mutationFn: () => merchantOrdersService.create(user!.store!, { ...form, shipResp: form.shipResp as 'منصة' | 'ذاتي', items }), onSuccess: () => { toast.success(t('تم إنشاء الطلب بنجاح')); invalidate(); setCreateOpen(false) } })
+  const cancel = useMutation({ mutationFn: (ref: string) => merchantOrdersService.cancel(ref), onSuccess: () => { toast.success(t('تم إلغاء الطلب بنجاح')); invalidate(); setCancelling(null); setViewing(null) }, onError: e => toast.error((e as Error).message) })
   const onLabel = (f: File | null) => {
     if (!f) return
-    if (!/\.(pdf|png|jpg|jpeg)$/i.test(f.name)) { setFErr('امتداد غير صالح، يرجى رفع ملف بصيغة PDF أو PNG أو JPG أو JPEG'); return }
-    if (f.size > 5 * 1024 * 1024) { setFErr('الحجم الأقصى للملف 5 ميجابايت، يرجى استخدام ملف آخر'); return }
+    if (!/\.(pdf|png|jpg|jpeg)$/i.test(f.name)) { setFErr(t('امتداد غير صالح، يرجى رفع ملف بصيغة PDF أو PNG أو JPG أو JPEG')); return }
+    if (f.size > 5 * 1024 * 1024) { setFErr(t('الحجم الأقصى للملف 5 ميجابايت، يرجى استخدام ملف آخر')); return }
     setFErr('')
     setForm(x => ({ ...x, label: f.name }))
   }
@@ -74,36 +74,36 @@ export default function MerchantOrdersPage() {
     return next
   }))
   const submit = () => {
-    if (!form.cust.trim()) { setFErr('العميل مطلوب'); return }
-    if (!form.address.trim()) { setFErr('عنوان الشحن مطلوب'); return }
-    if (!form.shipResp) { setFErr('مسؤولية الشحن مطلوبة'); return }
-    if (form.shipResp === 'منصة' && !form.method) { setFErr('طريقة الشحن مطلوبة'); return }
-    if (form.shipResp === 'ذاتي' && !form.label) { setFErr('ملصق الشحن مطلوب لطلبات الشحن الذاتي'); return }
-    if (form.tracking && (form.tracking.length < 5 || form.tracking.length > 100)) { setFErr('يجب أن يكون رقم التتبع بين 5 إلى 100'); return }
-    if (items.length === 0) { setFErr('أضف منتجًا واحدًا على الأقل للطلب'); return }
+    if (!form.cust.trim()) { setFErr(t('العميل مطلوب')); return }
+    if (!form.address.trim()) { setFErr(t('عنوان الشحن مطلوب')); return }
+    if (!form.shipResp) { setFErr(t('مسؤولية الشحن مطلوبة')); return }
+    if (form.shipResp === 'منصة' && !form.method) { setFErr(t('طريقة الشحن مطلوبة')); return }
+    if (form.shipResp === 'ذاتي' && !form.label) { setFErr(t('ملصق الشحن مطلوب لطلبات الشحن الذاتي')); return }
+    if (form.tracking && (form.tracking.length < 5 || form.tracking.length > 100)) { setFErr(t('يجب أن يكون رقم التتبع بين 5 إلى 100')); return }
+    if (items.length === 0) { setFErr(t('أضف منتجًا واحدًا على الأقل للطلب')); return }
     for (const it of items) {
-      if (!it.name) { setFErr('اسم المنتج مطلوب'); return }
-      if (!it.qty) { setFErr('الكمية مطلوبة'); return }
-      if (it.qty < 1) { setFErr('يجب أن تكون الكمية أكبر من 0'); return }
-      if (it.platform && it.qty > 10000) { setFErr('يجب أن تكون الكمية المطلوبة أقل من 10000'); return }
-      if ((it.notes ?? '').length > 500) { setFErr('الملاحظات يجب أن تكون أقل من 500 حرف'); return }
+      if (!it.name) { setFErr(t('اسم المنتج مطلوب')); return }
+      if (!it.qty) { setFErr(t('الكمية مطلوبة')); return }
+      if (it.qty < 1) { setFErr(t('يجب أن تكون الكمية أكبر من 0')); return }
+      if (it.platform && it.qty > 10000) { setFErr(t('يجب أن تكون الكمية المطلوبة أقل من 10000')); return }
+      if ((it.notes ?? '').length > 500) { setFErr(t('الملاحظات يجب أن تكون أقل من 500 حرف')); return }
     }
     setFErr('')
     create.mutate()
   }
   const columns: ColumnDef<MerchantOrder, unknown>[] = [
     { accessorKey: 'ref', header: t('رقم الطلب'), cell: ({ row }) => <b>{row.original.ref}</b> },
-    { accessorKey: 'cust', header: t('العميل') },
-    { accessorKey: 'date', header: t('تاريخ الطلب') },
-    { id: 'items', header: t('المنتجات'), cell: ({ row }) => row.original.items.map(i => i.name).join('، ').slice(0, 40) + '…' },
+    { id: 'cust', header: t('العميل'), cell: ({ row }) => t(row.original.cust) },
+    { accessorKey: 'date', header: t('تاريخ الطلب'), cell: ({ row }) => arDate(row.original.date) },
+    { id: 'items', header: t('المنتجات'), cell: ({ row }) => row.original.items.map(i => t(i.name)).join(', ').slice(0, 40) + '…' },
     { id: 'qty', header: t('الكمية الإجمالية'), cell: ({ row }) => row.original.items.reduce((s, i) => s + i.qty, 0) },
     { id: 'total', header: t('السعر الإجمالي'), cell: ({ row }) => <b>{money(row.original.total)}</b> },
     { id: 'ship', header: t('مسؤولية الشحن'), cell: ({ row }) => <StatusBadge value={row.original.shipResp} /> },
     { id: 'status', header: t('حالة الطلب'), cell: ({ row }) => <StatusBadge value={row.original.status} /> },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }) => (
       <ActionButtons actions={[
-        { icon: Eye, label: 'عرض تفاصيل الطلب', onClick: () => navigate('/merchant/records/order/' + row.original.ref) },
-        { icon: XCircle, label: 'إلغاء الطلب', variant: 'destructive', onClick: () => setCancelling(row.original.ref), hidden: row.original.status !== 'معلق' },
+        { icon: Eye, label: t('عرض تفاصيل الطلب'), onClick: () => navigate('/merchant/records/order/' + row.original.ref) },
+        { icon: XCircle, label: t('إلغاء الطلب'), variant: 'destructive', onClick: () => setCancelling(row.original.ref), hidden: row.original.status !== 'معلق' },
       ]} />) },
   ]
   return (
@@ -117,7 +117,7 @@ export default function MerchantOrdersPage() {
             </div>
             <select className={selectCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1) }} aria-label={t('تصفية حسب الحالة')}>
               <option value="">{t('كل الحالات')}</option>
-              {['معلق', 'قيد المعالجة', 'جاري الشحن', 'مكتمل', 'ارجاع', 'ملغي'].map(s => <option key={s} value={s}>{t(s)}</option>)}
+              {['معلق', 'قيد التنفيذ', 'قيد التغليف', 'جاهز للاستلام', 'قيد التوصيل', 'مكتمل', 'مرفوض', 'ملغي'].map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
             <select className={selectCls} value={ship} onChange={e => { setShip(e.target.value); setPage(1) }} aria-label={t('تصفية حسب مسؤولية الشحن')}>
               <option value="">{t('مسؤولية الشحن: الكل')}</option>
@@ -125,7 +125,7 @@ export default function MerchantOrdersPage() {
               <option value="ذاتي">{t('الشحن الذاتي')}</option>
             </select>
             <div className="ms-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => { downloadCSV('my-orders', ['الرقم', 'العميل', 'التاريخ', 'الحالة', 'الشحن', 'الإجمالي'], (data?.rows ?? []).map(o => [o.ref, o.cust, o.date, o.status, o.shipResp, o.total])); toast.success('تم تصدير قائمة الطلبات بنجاح') }}>{t('تصدير')}</Button>
+              <Button variant="outline" size="sm" onClick={() => { downloadCSV('my-orders', ['الرقم', 'العميل', 'التاريخ', 'الحالة', 'الشحن', 'الإجمالي'], (data?.rows ?? []).map(o => [o.ref, o.cust, o.date, o.status, o.shipResp, o.total])); toast.success(t('تم تصدير قائمة الطلبات بنجاح')) }}>{t('تصدير')}</Button>
               <Button size="sm" onClick={() => { setForm({ cust: '', address: '', shipResp: '', method: '', carrier: 'أرامكس (Aramex)', tracking: '', label: '' }); setItems([{ name: '', qty: 1, price: 0, notes: '' }]); setFErr(''); setCreateOpen(true) }}><Plus className="size-4" /> {t('إنشاء طلب')}</Button>
             </div>
           </div>
@@ -138,8 +138,8 @@ export default function MerchantOrdersPage() {
           <div><Label>{t('مسؤولية الشحن')} <span className="text-destructive">*</span></Label>
             <select className={selectCls + ' w-full'} value={form.shipResp} onChange={e => setForm(f => ({ ...f, shipResp: e.target.value as '' | 'منصة' | 'ذاتي' }))}>
               <option value="">{t('اختر...')}</option>
-              <option value="منصة">{t('شحن المنصة')} (تتولى خدمة الطرف الثالث الشحن)</option>
-              <option value="ذاتي">{t('الشحن الذاتي')} (يتولى التاجر الشحن)</option>
+              <option value="منصة">{t('شحن المنصة')}</option>
+              <option value="ذاتي">{t('الشحن الذاتي')}</option>
             </select></div>
           {form.shipResp === 'منصة' && <>
             <div><Label>{t('شركة الشحن (Carrier)')} <span className="text-destructive">*</span></Label>
@@ -160,7 +160,7 @@ export default function MerchantOrdersPage() {
             <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">{t('لقد اخترت الشحن الذاتي. يرجى إرفاق بوليصة شحنك لإتمام الطلب — يرجى إرفاق بوليصة شحن لإتمام الطلب.')}</div>
             <div className="md:col-span-2">
               <FileUploadWithPreview
-                label="بوليصة الشحن (PDF/PNG/JPG/JPEG حتى 5MB)"
+                label={t('بوليصة الشحن (PDF/PNG/JPG/JPEG حتى 5MB)')}
                 files={form.label ? [form.label] : []}
                 single
                 maxSizeMB={5}
@@ -171,45 +171,45 @@ export default function MerchantOrdersPage() {
           </>}
         </div>
         <div className="mt-4">
-          <p className="mb-2 text-sm font-extrabold">المنتجات <span className="text-destructive">*</span></p>
+          <p className="mb-2 text-sm font-extrabold">{t('المنتجات')} <span className="text-destructive">*</span></p>
           <div className="space-y-2">
             {items.map((it, i) => (
               <div key={i} className="grid gap-2 rounded-lg border bg-muted/40 p-2 md:grid-cols-[1fr_110px_1fr_40px]">
-                <select className={selectCls} value={it.name} onChange={e => setItem(i, { name: e.target.value })} aria-label="المنتج">
-                  <option value="">اختر المنتج...</option>
-                  <optgroup label="منتجاتي">{(opts?.mine ?? []).map(p => <option key={p.name} value={p.name}>{p.name}</option>)}</optgroup>
-                  <optgroup label="منتجات المنصة">{(opts?.platform ?? []).map(p => <option key={p.name} value={p.name}>{p.name} (منصة)</option>)}</optgroup>
+                <select className={selectCls} value={it.name} onChange={e => setItem(i, { name: e.target.value })} aria-label={t('المنتج')}>
+                  <option value="">{t('اختر المنتج...')}</option>
+                  <optgroup label={t('منتجاتي')}>{(opts?.mine ?? []).map(p => <option key={p.name} value={p.name}>{t(p.name)}</option>)}</optgroup>
+                  <optgroup label={t('منتجات المنصة')}>{(opts?.platform ?? []).map(p => <option key={p.name} value={p.name}>{t(p.name)} ({t('منصة')})</option>)}</optgroup>
                 </select>
-                <Input type="number" min={1} value={it.qty || ''} onChange={e => setItem(i, { qty: +e.target.value })} aria-label="الكمية" />
-                <Input value={it.notes ?? ''} maxLength={500} onChange={e => setItem(i, { notes: e.target.value })} placeholder="ملاحظات (اختياري)" aria-label="ملاحظات العنصر" />
-                <Button variant="outline" size="icon" className="size-9 text-destructive" onClick={() => setItems(s => s.filter((_, j) => j !== i))} aria-label="حذف العنصر"><Trash2 className="size-4" /></Button>
-                {it.platform && <p className="md:col-span-4 text-[11px] font-bold text-violet-700">منتج منصة — لا يُتحقق من المخزون (الحد الأقصى 10000)</p>}
+                <Input type="number" min={1} value={it.qty || ''} onChange={e => setItem(i, { qty: +e.target.value })} aria-label={t('الكمية')} />
+                <Input value={it.notes ?? ''} maxLength={500} onChange={e => setItem(i, { notes: e.target.value })} placeholder={t('ملاحظات (اختياري)')} aria-label={t('ملاحظات العنصر')} />
+                <Button variant="outline" size="icon" className="size-9 text-destructive" onClick={() => setItems(s => s.filter((_, j) => j !== i))} aria-label={t('حذف')}><Trash2 className="size-4" /></Button>
+                {it.platform && <p className="md:col-span-4 text-[11px] font-bold text-violet-700">{t('منتج منصة — لا يُتحقق من المخزون (الحد الأقصى 10000)')}</p>}
               </div>
             ))}
           </div>
-          <Button variant="outline" size="sm" className="mt-2" onClick={() => setItems(s => [...s, { name: '', qty: 1, price: 0, notes: '' }])}>إضافة منتج</Button>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => setItems(s => [...s, { name: '', qty: 1, price: 0, notes: '' }])}>{t('إضافة منتج')}</Button>
         </div>
         {fErr && <p className="mt-2 text-xs font-bold text-destructive">{fErr}</p>}
       </Modal>
-      <Modal open={!!viewing} onClose={() => setViewing(null)} wide title={'تفاصيل الطلب — ' + (viewing?.ref ?? '')}
+      <Modal open={!!viewing} onClose={() => setViewing(null)} wide title={t('تفاصيل الطلب') + ' — ' + (viewing?.ref ?? '')}
         footer={<>
-          <Button variant="outline" onClick={() => { setSelectedOrderForLabel(viewing); setCarrierModalOpen(true); }}><Download className="size-4" /> بوليصة الشحن (PDF)</Button>
-          {viewing?.status === 'معلق' && <Button variant="destructive" onClick={() => setCancelling(viewing.ref)}>إلغاء الطلب</Button>}
+          <Button variant="outline" onClick={() => { setSelectedOrderForLabel(viewing); setCarrierModalOpen(true); }}><Download className="size-4" /> {t('بوليصة الشحن')} (PDF)</Button>
+          {viewing?.status === 'معلق' && <Button variant="destructive" onClick={() => setCancelling(viewing.ref)}>{t('إلغاء الطلب')}</Button>}
         </>}>
         {viewing && <>
-          {viewing.shipResp === 'ذاتي' && <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">هذا الطلب يتم شحنه ذاتيا من قبل التاجر. ملصق شحن المنصة غير قابل للتطبيق.</div>}
+          {viewing.shipResp === 'ذاتي' && <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">{t('هذا الطلب يتم شحنه ذاتيا من قبل التاجر. ملصق شحن المنصة غير قابل للتطبيق.')}</div>}
           <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-3">
-            {([['العميل', viewing.cust], ['عنوان الشحن', viewing.address], ['التاريخ', viewing.date], ['مسؤولية الشحن', viewing.shipResp === 'منصة' ? 'شحن المنصة' : 'الشحن الذاتي'], ['طريقة الشحن', viewing.shipResp === 'منصة' ? (viewing.method ?? '—') : 'ذاتي — الملصق في الملف'], ['رقم التتبع', viewing.tracking ?? '—'], ['الإجمالي', money(viewing.total)], ['الحالة', viewing.status]] as [string, string][]).map(([k, v]) => (
+            {([[t('العميل'), t(viewing.cust)], [t('عنوان الشحن'), viewing.address], [t('التاريخ'), arDate(viewing.date)], [t('مسؤولية الشحن'), viewing.shipResp === 'منصة' ? t('شحن المنصة') : t('الشحن الذاتي')], [t('طريقة الشحن'), viewing.shipResp === 'منصة' ? (viewing.method ? t(viewing.method) : '—') : t('ذاتي — الملصق في الملف')], [t('رقم التتبع'), viewing.tracking ?? '—'], [t('الإجمالي'), money(viewing.total)], [t('الحالة'), t(viewing.status)]] as [string, string][]).map(([k, v]) => (
               <div key={k} className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>))}
           </div>
           <div className="overflow-hidden rounded-lg border">
-            <table className="w-full text-sm"><thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">المنتج</th><th className="p-2 text-start font-extrabold">الكمية</th><th className="p-2 text-start font-extrabold">السعر</th></tr></thead>
+            <table className="w-full text-sm"><thead><tr className="border-b bg-muted/50 text-xs text-muted-foreground"><th className="p-2 text-start font-extrabold">{t('المنتج')}</th><th className="p-2 text-start font-extrabold">{t('الكمية')}</th><th className="p-2 text-start font-extrabold">{t('السعر')}</th></tr></thead>
               <tbody>{viewing.items.map((i, idx) => (
-                <tr key={idx} className="border-b"><td className="p-2 font-bold">{i.name} {i.platform && <span className="ms-1 rounded-md bg-violet-50 px-2 py-0.5 text-[10.5px] font-extrabold text-violet-700">منتج منصة</span>}</td><td className="p-2">{i.qty}</td><td className="p-2">{money(i.price)}</td></tr>))}
+                <tr key={idx} className="border-b"><td className="p-2 font-bold">{t(i.name)} {i.platform && <span className="ms-1 rounded-md bg-violet-50 px-2 py-0.5 text-[10.5px] font-extrabold text-violet-700">{t('منصة')}</span>}</td><td className="p-2">{i.qty}</td><td className="p-2">{money(i.price)}</td></tr>))}
               </tbody></table>
           </div>
-          <p className="mb-1 mt-3 text-xs font-extrabold text-muted-foreground">سجل الأنشطة</p>
-          <div className="space-y-1">{viewing.log.map((l, i) => <p key={i} className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {l}</p>)}</div>
+          <p className="mb-1 mt-3 text-xs font-extrabold text-muted-foreground">{t('سجل الأنشطة')}</p>
+          <div className="space-y-1">{viewing.log.map((l, i) => <p key={i} className="rounded-md border p-2 text-[11px] font-bold text-muted-foreground">• {t(l)}</p>)}</div>
         </>}
       </Modal>
 
@@ -217,38 +217,38 @@ export default function MerchantOrdersPage() {
       <Modal
         open={carrierModalOpen}
         onClose={() => setCarrierModalOpen(false)}
-        title="اختيار شركة الشحن لطباعة البوليصة"
+        title={t('اختيار شركة الشحن لطباعة البوليصة')}
         footer={
           <>
-            <Button variant="outline" onClick={() => setCarrierModalOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setCarrierModalOpen(false)}>{t('إلغاء')}</Button>
             <Button onClick={() => selectedOrderForLabel && generateShippingLabel(selectedOrderForLabel, selectedCarrier)}>
-              <Download className="size-4" /> إنشاء وطباعة البوليصة
+              <Download className="size-4" /> {t('إنشاء وطباعة البوليصة')}
             </Button>
           </>
         }
       >
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-muted-foreground">شركة الشحن (Carrier)</label>
+            <label className="mb-1.5 block text-xs font-bold text-muted-foreground">{t('شركة الشحن (Carrier)')}</label>
             <select
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-ring"
               value={selectedCarrier}
               onChange={e => setSelectedCarrier(e.target.value)}
             >
               {['أرامكس (Aramex)', 'سمسا إكسبريس (SMSA Express)', 'دي إتش إل (DHL Express)', 'فيديكس (FedEx)', 'سبل - البريد السعودي (SPL)', 'ناقل إكسبريس (Naqel)', 'ريد بوكس (RedBox)', 'جي آند تي إكسبريس (J&T Express)'].map(c => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{t(c)}</option>
               ))}
             </select>
           </div>
           <p className="text-xs text-muted-foreground">
-            سيتم إنشاء بوليصة الشحن الرسمية متضمنة شعار واسم الناقل المختار وتفاصيل المستودع والعميل.
+            {t('سيتم إنشاء بوليصة الشحن الرسمية متضمنة شعار واسم الناقل المختار وتفاصيل المستودع والعميل.')}
           </p>
         </div>
       </Modal>
 
-      <ConfirmDialog open={!!cancelling} onOpenChange={v => { if (!v) setCancelling(null) }} destructive title="إلغاء الطلب" loading={cancel.isPending}
-        description={'هل أنت متأكد من رغبتك في إلغاء الطلب: ' + (cancelling ?? '') + '؟'}
-        confirmLabel="إلغاء الطلب" onConfirm={() => cancel.mutate(cancelling!)} />
+      <ConfirmDialog open={!!cancelling} onOpenChange={v => { if (!v) setCancelling(null) }} destructive title={t('إلغاء الطلب')} loading={cancel.isPending}
+        description={t('هل أنت متأكد من رغبتك في إلغاء هذا الطلب؟') + ' ' + (cancelling ?? '')}
+        confirmLabel={t('إلغاء الطلب')} onConfirm={() => cancel.mutate(cancelling!)} />
     </div>
   )
 }

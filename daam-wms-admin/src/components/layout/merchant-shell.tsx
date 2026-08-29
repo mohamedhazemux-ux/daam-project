@@ -11,18 +11,40 @@ import { Breadcrumbs } from './breadcrumbs'
 import { audit } from '@/services/audit.service'
 import { cn, initials } from '@/lib/utils'
 import { BrandLogo } from '@/components/brand-logo'
+import { LanguageToggle } from '@/components/language-toggle'
 import { useT } from '@/lib/i18n'
-import { LayoutDashboard, ShoppingCart, Package, Layers, Undo2, Wallet, Wrench, Bell, Menu, LogOut, User, BarChart3, Settings, type LucideIcon } from 'lucide-react'
-const TITLES: Record<string, string> = { '/merchant': 'لوحة التحكم', '/merchant/orders': 'الطلبات', '/merchant/products': 'المنتجات', '/merchant/inventory': 'المخزون', '/merchant/returns': 'المرتجعات', '/merchant/wallet': 'المحفظة والمالية', '/merchant/services': 'طلبات الخدمة', '/merchant/notifications': 'مركز الإشعارات', '/merchant/profile': 'الملف الشخصي', '/merchant/reports': 'التقارير والتحليلات', '/merchant/settings': 'الإعدادات' }
+import { LayoutDashboard, ShoppingCart, Package, Layers, Warehouse, Undo2, Banknote, Wallet, FileText, Wrench, RefreshCw, Bell, Menu, LogOut, User, BarChart3, Settings, type LucideIcon } from 'lucide-react'
+
+const TITLES: Record<string, string> = {
+  '/merchant': 'لوحة التحكم',
+  '/merchant/products': 'المنتجات',
+  '/merchant/inventory': 'مستويات المخزون',
+  '/merchant/inventory/levels': 'مستويات المخزون',
+  '/merchant/inventory/requests': 'طلبات المخزون',
+  '/merchant/inventory/storage': 'استخدام التخزين',
+  '/merchant/orders': 'الطلبات',
+  '/merchant/returns': 'المرتجعات',
+  '/merchant/wallet': 'المحفظة والمعاملات',
+  '/merchant/finance/wallet': 'المحفظة والمعاملات',
+  '/merchant/finance/withdrawals': 'طلبات السحب',
+  '/merchant/finance/invoices': 'الفواتير الشهرية',
+  '/merchant/services': 'طلبات الخدمة',
+  '/merchant/services/requests': 'طلبات الخدمة',
+  '/merchant/services/subscriptions': 'الاشتراكات',
+  '/merchant/notifications': 'مركز الإشعارات',
+  '/merchant/profile': 'الملف الشخصي',
+  '/merchant/reports': 'التقارير والتحليلات',
+  '/merchant/settings': 'الإعدادات',
+}
 
 export const MERCHANT_RECORD_KIND_TO_NAV: Record<string, string> = {
   order: '/merchant/orders',
   product: '/merchant/products',
   return: '/merchant/returns',
-  'stock-request': '/merchant/inventory',
-  'service-request': '/merchant/services',
-  withdrawal: '/merchant/wallet',
-  invoice: '/merchant/wallet',
+  'stock-request': '/merchant/inventory/requests',
+  'service-request': '/merchant/services/requests',
+  withdrawal: '/merchant/finance/withdrawals',
+  invoice: '/merchant/finance/invoices',
 }
 
 export const MERCHANT_RECORD_KIND_TITLES: Record<string, string> = {
@@ -35,18 +57,54 @@ export const MERCHANT_RECORD_KIND_TITLES: Record<string, string> = {
   invoice: 'تفاصيل الفاتورة',
 }
 
-const NAV: { to: string; label: string; icon: LucideIcon }[] = [
-  { to: '/merchant', label: 'لوحة التحكم', icon: LayoutDashboard },
-  { to: '/merchant/orders', label: 'الطلبات', icon: ShoppingCart },
-  { to: '/merchant/products', label: 'المنتجات', icon: Package },
-  { to: '/merchant/inventory', label: 'المخزون', icon: Layers },
-  { to: '/merchant/returns', label: 'المرتجعات', icon: Undo2 },
-  { to: '/merchant/wallet', label: 'المحفظة والمالية', icon: Wallet },
-  { to: '/merchant/services', label: 'طلبات الخدمة', icon: Wrench },
-  { to: '/merchant/notifications', label: 'مركز الإشعارات', icon: Bell },
-  { to: '/merchant/reports', label: 'التقارير والتحليلات', icon: BarChart3 },
-  { to: '/merchant/settings', label: 'الإعدادات', icon: Settings },
+const NAV: { section: string; items: { to: string; label: string; icon: LucideIcon }[] }[] = [
+  {
+    section: 'الرئيسية',
+    items: [
+      { to: '/merchant', label: 'لوحة التحكم', icon: LayoutDashboard },
+    ],
+  },
+  {
+    section: 'المخزون',
+    items: [
+      { to: '/merchant/products', label: 'المنتجات', icon: Package },
+      { to: '/merchant/inventory/requests', label: 'طلبات المخزون', icon: Layers },
+      { to: '/merchant/inventory/levels', label: 'مستويات المخزون', icon: Warehouse },
+      { to: '/merchant/inventory/storage', label: 'استخدام التخزين', icon: BarChart3 },
+    ],
+  },
+  {
+    section: 'العمليات',
+    items: [
+      { to: '/merchant/orders', label: 'الطلبات', icon: ShoppingCart },
+      { to: '/merchant/returns', label: 'المرتجعات', icon: Undo2 },
+    ],
+  },
+  {
+    section: 'المالية',
+    items: [
+      { to: '/merchant/finance/withdrawals', label: 'طلبات السحب', icon: Banknote },
+      { to: '/merchant/finance/wallet', label: 'المحفظة', icon: Wallet },
+      { to: '/merchant/finance/invoices', label: 'الفواتير', icon: FileText },
+    ],
+  },
+  {
+    section: 'الخدمات',
+    items: [
+      { to: '/merchant/services/requests', label: 'طلبات الخدمة', icon: Wrench },
+      { to: '/merchant/services/subscriptions', label: 'الاشتراكات', icon: RefreshCw },
+    ],
+  },
+  {
+    section: 'النظام',
+    items: [
+      { to: '/merchant/reports', label: 'التقارير', icon: BarChart3 },
+      { to: '/merchant/settings', label: 'الإعدادات', icon: Settings },
+      { to: '/merchant/notifications', label: 'الإشعارات', icon: Bell },
+    ],
+  },
 ]
+
 export function isMerchantNavActive(pathname: string, targetTo: string): boolean {
   if (targetTo === '/merchant') return pathname === '/merchant'
   if (pathname === targetTo || pathname.startsWith(targetTo + '/')) return true
@@ -63,30 +121,36 @@ function SidebarContent() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-20 items-center border-b px-5"><BrandLogo /></div>
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="تنقل بوابة التاجر">
-        {NAV.map(it => {
-          const active = isMerchantNavActive(location.pathname, it.to)
-          return (
-            <NavLink
-              key={it.to}
-              to={it.to}
-              className={cn(
-                'mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors',
-                active
-                  ? 'bg-foreground text-background hover:bg-foreground hover:text-background'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )}
-            >
-              <it.icon className="size-[18px] shrink-0" aria-hidden />
-              <span className="flex-1">{t(it.label)}</span>
-            </NavLink>
-          )
-        })}
+      <nav className="flex-1 space-y-4 overflow-y-auto p-3" aria-label="تنقل بوابة التاجر">
+        {NAV.map(g => (
+          <div key={g.section}>
+            <p className="mb-1 px-3 text-[10.5px] font-black text-muted-foreground">{t(g.section)}</p>
+            {g.items.map(it => {
+              const active = isMerchantNavActive(location.pathname, it.to)
+              return (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  className={cn(
+                    'mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors',
+                    active
+                      ? 'bg-foreground text-background hover:bg-foreground hover:text-background'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  <it.icon className="size-[18px] shrink-0" aria-hidden />
+                  <span className="flex-1">{t(it.label)}</span>
+                </NavLink>
+              )
+            })}
+          </div>
+        ))}
       </nav>
       <div className="border-t px-4 py-3 text-[11px] font-bold text-muted-foreground">{t('بوابة التجار')} — {t('الإصدار')} 2.0</div>
     </div>
   )
 }
+
 export function MerchantShell() {
   const { sidebarOpen, toggleSidebar, closeSidebar } = useUIStore()
   const user = useAuthStore(s => s.user)
@@ -122,11 +186,12 @@ export function MerchantShell() {
             </div>
           </div>
           <div className="ms-auto flex items-center gap-2">
+            <LanguageToggle />
             <NotificationsPopover />
             <div className="relative">
               <button onClick={() => setMenuOpen(o => !o)} className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent" aria-label={t('قائمة الحساب')}>
                 <Avatar className="size-8"><AvatarFallback className="bg-foreground text-background">{initials(user?.name ?? '')}</AvatarFallback></Avatar>
-                <span className="hidden text-[13px] font-extrabold md:block">{user?.name}</span>
+                <span className="hidden text-[13px] font-extrabold md:block">{t(user?.name ?? '')}</span>
               </button>
               {menuOpen && (
                 <>

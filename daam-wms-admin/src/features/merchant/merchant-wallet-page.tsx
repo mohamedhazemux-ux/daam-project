@@ -12,31 +12,38 @@ import { ActionButtons, AttachmentBadgeList, ConfirmDialog, FileUploadWithPrevie
 import { merchantFinanceService, type Tx } from '@/services/merchant-finance.service'
 import { useAuthStore } from '@/store/auth-store'
 import { useDebouncedValue } from '@/hooks/use-debounce'
-import { downloadCSV, money } from '@/lib/utils'
+import { downloadCSV, money, arDate } from '@/lib/utils'
 import { printInvoicePDF } from '@/lib/pdf-utils'
 import { useT } from '@/lib/i18n'
 import { Download, Eye, FileDown, Search, Wallet, XCircle } from 'lucide-react'
 const KV = ({ k, v }: { k: string; v: React.ReactNode }) => <div className="rounded-lg border bg-muted/40 px-3 py-2"><p className="text-[11px] font-bold text-muted-foreground">{k}</p><p className="text-[13px] font-extrabold">{v}</p></div>
-const TABS: [string, string][] = [['overview', 'نظرة عامة'], ['tx', 'سجل المعاملات'], ['wd', 'طلبات السحب'], ['subs', 'الاشتراكات'], ['inv', 'الفواتير الشهرية']]
 export default function MerchantWalletPage() {
-  const t = useT()
-  const [tab, setTab] = useState('overview')
+  const scrollToTx = () => {
+    const el = document.getElementById('merchant-tx-section')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const searchInput = el.querySelector('input')
+      if (searchInput) {
+        setTimeout(() => searchInput.focus(), 400)
+      }
+    }
+  }
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-2 shadow-sm">
-        {TABS.map(([v, l]) => <button key={v} onClick={() => setTab(v)} className={tab === v ? 'rounded-lg bg-foreground px-4 py-2 text-[13px] font-extrabold text-background' : 'rounded-lg px-4 py-2 text-[13px] font-bold text-muted-foreground hover:bg-accent'}>{t(l)}</button>)}
+    <div className="space-y-6">
+      <Overview onShowTx={scrollToTx} />
+      <div id="merchant-tx-section" className="pt-2">
+        <h3 className="mb-3 text-sm font-black">سجل المعاملات المالية</h3>
+        <TxTab />
       </div>
-      {tab === 'overview' && <Overview go={setTab} />}
-      {tab === 'tx' && <TxTab />}
-      {tab === 'wd' && <WdTab />}
-      {tab === 'subs' && <SubsTab />}
-      {tab === 'inv' && <InvTab />}
     </div>
   )
 }
-function Overview({ go }: { go: (t: string) => void }) {
+
+function Overview({ onShowTx }: { onShowTx: () => void }) {
+  const t = useT()
   const user = useAuthStore(s => s.user)
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const { data: w } = useQuery({ queryKey: ['m-wallet', user?.store], queryFn: () => merchantFinanceService.wallet(user!.store!), refetchInterval: 60_000 })
   const { data: accounts } = useQuery({ queryKey: ['m-bank', user?.store], queryFn: () => merchantFinanceService.bankAccounts(user!.store!) })
   const [wdOpen, setWdOpen] = useState(false)
@@ -45,21 +52,30 @@ function Overview({ go }: { go: (t: string) => void }) {
   const onFiles = (list: FileList | null) => {
     if (!list) return
     const arr = Array.from(list)
-    if (form.attachments.length + arr.length > 5) { setFErr('الحد الأقصى 5 مرفقات'); return }
+    if (form.attachments.length + arr.length > 5) { setFErr(t('الحد الأقصى 5 مرفقات')); return }
     for (const f of arr) {
-      if (!/\.(jpg|png|jpeg|pdf)$/i.test(f.name)) { setFErr('امتداد غير صالح، يرجى رفع ملف بصيغة JPG أو PNG أو JPEG أو PDF'); return }
-      if (f.size > 10 * 1024 * 1024) { setFErr('الحجم الأقصى للملف 10 ميجابايت، يرجى استخدام ملف آخر'); return }
+      if (!/\.(jpg|png|jpeg|pdf)$/i.test(f.name)) { setFErr(t('امتداد غير صالح، يرجى رفع ملف بصيغة JPG أو PNG أو JPEG أو PDF')); return }
+      if (f.size > 10 * 1024 * 1024) { setFErr(t('الحجم الأقصى للملف 10 ميجابايت، يرجى استخدام ملف آخر')); return }
     }
     setFErr('')
     setForm(f => ({ ...f, attachments: [...f.attachments, ...arr.map(x => x.name)] }))
   }
-  const submit = useMutation({ mutationFn: () => merchantFinanceService.submitWithdrawal(user!.store!, user!.email, form), onSuccess: () => { toast.success('تم إرسال طلب السحب بنجاح'); qc.invalidateQueries({ queryKey: ['m-wallet'] }); qc.invalidateQueries({ queryKey: ['m-wd'] }); setWdOpen(false); go('wd') } })
+  const submit = useMutation({
+    mutationFn: () => merchantFinanceService.submitWithdrawal(user!.store!, user!.email, form),
+    onSuccess: () => {
+      toast.success(t('تم إرسال طلب السحب بنجاح'))
+      qc.invalidateQueries({ queryKey: ['m-wallet'] })
+      qc.invalidateQueries({ queryKey: ['m-wd'] })
+      setWdOpen(false)
+      navigate('/merchant/finance/withdrawals')
+    }
+  })
   const doSubmit = () => {
-    if (!form.amount) { setFErr('مبلغ السحب مطلوب'); return }
-    if (form.amount < 100) { setFErr('الحد الأدنى لمبلغ السحب هو 100'); return }
-    if (w && form.amount > w.avail) { setFErr('يجب أن يكون مبلغ السحب أقل من أو يساوي الرصيد المتاح'); return }
-    if (!form.account) { setFErr('الحساب البنكي مطلوب'); return }
-    if (form.notes.length > 300) { setFErr('يجب أن تكون ملاحظات السحب أقل من 300 حرف'); return }
+    if (!form.amount) { setFErr(t('مبلغ السحب مطلوب')); return }
+    if (form.amount < 100) { setFErr(t('الحد الأدنى لمبلغ السحب هو 100')); return }
+    if (w && form.amount > w.avail) { setFErr(t('يجب أن يكون مبلغ السحب أقل من أو يساوي الرصيد المتاح')); return }
+    if (!form.account) { setFErr(t('الحساب البنكي مطلوب')); return }
+    if (form.notes.length > 300) { setFErr(t('يجب أن تكون ملاحظات السحب أقل من 300 حرف')); return }
     setFErr('')
     submit.mutate()
   }
@@ -69,31 +85,54 @@ function Overview({ go }: { go: (t: string) => void }) {
       <div className="rounded-xl border bg-card p-5 shadow-sm">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex size-14 items-center justify-center rounded-2xl bg-foreground"><Wallet className="size-7 text-background" /></div>
-          <div><p className="text-[11px] font-bold text-muted-foreground">الرصيد الحالي للمحفظة</p><p className="text-3xl font-black">{money(w.bal)}</p></div>
+          <div><p className="text-[11px] font-bold text-muted-foreground">{t('الرصيد الحالي للمحفظة')}</p><p className="text-3xl font-black">{money(w.bal)}</p></div>
           <div className="ms-auto flex gap-2">
-            <Button variant="outline" onClick={() => go('tx')}>عرض سجل المعاملات</Button>
-            <Button onClick={() => { setForm({ amount: 0, account: '', notes: '', attachments: [] }); setFErr(''); setWdOpen(true) }}>طلب سحب</Button>
+            <Button variant="outline" onClick={onShowTx}>{t('عرض سجل المعاملات')}</Button>
+            <Button onClick={() => { setForm({ amount: 0, account: '', notes: '', attachments: [] }); setFErr(''); setWdOpen(true) }}>{t('طلب سحب')}</Button>
           </div>
         </div>
       </div>
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <KV k="إجمالي الإيداعات (تراكمي)" v={money(w.credits)} /><KV k="إجمالي السحوبات (تراكمي)" v={money(w.debits)} /><KV k="إيداعات معلقة" v={money(w.pending)} /><KV k="المبلغ المحجوز" v={money(w.res)} /><KV k="الرصيد المتاح" v={money(w.avail)} />
+        <KV k={t('إجمالي الإيداعات (تراكمي)')} v={money(w.credits)} /><KV k={t('إجمالي السحوبات (تراكمي)')} v={money(w.debits)} /><KV k={t('إيداعات معلقة')} v={money(w.pending)} /><KV k={t('المبلغ المحجوز')} v={money(w.res)} /><KV k={t('الرصيد المتاح')} v={money(w.avail)} />
       </div>
-      <Modal open={wdOpen} onClose={() => setWdOpen(false)} title="طلب سحب من المحفظة"
-        footer={<><Button variant="outline" onClick={() => setWdOpen(false)}>إلغاء</Button><Button disabled={submit.isPending} onClick={doSubmit}>إرسال طلب السحب</Button></>}>
+      <Modal open={wdOpen} onClose={() => setWdOpen(false)} title={t('طلب سحب من المحفظة')}
+        footer={<><Button variant="outline" onClick={() => setWdOpen(false)}>{t('إلغاء')}</Button><Button disabled={submit.isPending} onClick={doSubmit}>{t('إرسال طلب السحب')}</Button></>}>
         <div className="grid gap-3">
-          <KV k="الرصيد المتاح" v={money(w.avail)} />
-          <div><Label>مبلغ السحب (حد أدنى 100) <span className="text-destructive">*</span></Label><Input type="number" min={100} value={form.amount || ''} onChange={e => setForm(f => ({ ...f, amount: +e.target.value }))} /></div>
-          <div><Label>طريقة السحب <span className="text-destructive">*</span></Label><Input readOnly value="تحويل بنكي" /></div>
-          <div><Label>الحساب البنكي <span className="text-destructive">*</span></Label>
-            {(accounts ?? []).length === 0 ? <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 text-xs font-bold text-destructive">لا يوجد حساب بنكي موثق، يرجى إضافة حساب بنكي أولاً</p> : (
+          <div>
+            <Label>{t('مبلغ السحب')} <span className="text-destructive">*</span></Label>
+            <Input
+              type="number"
+              min={100}
+              max={w.avail}
+              placeholder={t('أدخل المبلغ (مثال: 500)')}
+              value={form.amount || ''}
+              onChange={e => {
+                const val = e.target.value === '' ? 0 : Number(e.target.value)
+                setForm(f => ({ ...f, amount: val }))
+                if (val > 0 && val < 100) {
+                  setFErr(t('تنبيه: الحد الأدنى للسحب هو 100 ر.س — يرجى كتابة مبلغ 100 فما فوق'))
+                } else if (w && val > w.avail) {
+                  setFErr(t('تنبيه: المبلغ يتجاوز الرصيد المتاح') + ` (${money(w.avail)})`)
+                } else {
+                  setFErr('')
+                }
+              }}
+            />
+            <p className="mt-1 text-[11px] font-bold text-muted-foreground">
+              {t('الحد الأدنى للسحب:')} <b className="text-foreground">100 {t('ر.س')}</b> — {t('الرصيد المتاح:')} <b className="text-foreground">{money(w.avail)}</b>
+            </p>
+          </div>
+          <div><Label>{t('طريقة السحب')} <span className="text-destructive">*</span></Label><Input readOnly value={t('تحويل بنكي')} /></div>
+          <div><Label>{t('الحساب البنكي')} <span className="text-destructive">*</span></Label>
+            {(accounts ?? []).length === 0 ? <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-2 text-xs font-bold text-destructive">{t('لا يوجد حساب بنكي موثق، يرجى إضافة حساب بنكي أولاً')}</p> : (
               <select className={selectCls + ' w-full'} value={form.account} onChange={e => setForm(f => ({ ...f, account: e.target.value }))}>
-                <option value="">اختر الحساب...</option>
+                <option value="">{t('اختر الحساب...')}</option>
                 {(accounts ?? []).map(a => <option key={a.id} value={a.label}>{a.label}</option>)}
               </select>)}</div>
-          <div><Label>ملاحظات السحب (اختياري — 300 حرف)</Label><Textarea maxLength={300} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+          <div><Label>{t('ملاحظات السحب (اختياري — 300 حرف)')}</Label><Textarea maxLength={300} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
           <div>
-            <Label className="mb-1 block">المرفقات والوثائق الداعمة (اختياري — حتى 5 ملفات)</Label>
+            <Label className="mb-1 block">{t('المرفقات والوثائق الداعمة (اختياري — حتى 5 ملفات)')}</Label>
             <FileUploadWithPreview
               files={form.attachments}
               accept=".jpg,.png,.jpeg,.pdf,.webp"
@@ -124,7 +163,7 @@ function TxTab() {
     { id: 'amount', header: t('المبلغ'), cell: ({ row }: any) => <span className={(row.original.type === 'إيداع' || row.original.type === 'استرداد') ? 'font-black text-emerald-600' : 'font-black text-destructive'}>{(row.original.type === 'إيداع' || row.original.type === 'استرداد') ? '+' : '-'}{money(row.original.amount)}</span> },
     { id: 'running', header: t('الرصيد بعد المعاملة'), cell: ({ row }: any) => money(row.original.running) },
     { id: 'status', header: t('الحالة'), cell: ({ row }: any) => <StatusBadge value={row.original.status} /> },
-    { accessorKey: 'date', header: t('التاريخ') },
+    { accessorKey: 'date', header: t('التاريخ'), cell: ({ row }: any) => arDate(row.original.date) },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }: any) => <Button size="sm" variant="outline" onClick={() => setViewing(row.original)}>{t('عرض التفاصيل')}</Button> },
   ] as ColumnDef<any, unknown>[]
   return (
@@ -195,14 +234,14 @@ function WdTab() {
   const columns = [
     { accessorKey: 'id', header: t('رقم الطلب'), cell: ({ row }: any) => <b>{row.original.id}</b> },
     { id: 'amount', header: t('المبلغ'), cell: ({ row }: any) => money(row.original.amount) },
-    { accessorKey: 'method', header: t('الطريقة') },
+    { accessorKey: 'method', header: t('الطريقة'), cell: ({ row }: any) => t(row.original.method) },
     { accessorKey: 'bank', header: t('الحساب البنكي'), cell: ({ row }: any) => <span dir="ltr">****{String(row.original.bank).slice(-4)}</span> },
     { id: 'status', header: t('الحالة'), cell: ({ row }: any) => <StatusBadge value={row.original.status} /> },
-    { accessorKey: 'date', header: t('تاريخ الطلب') },
+    { accessorKey: 'date', header: t('تاريخ الطلب'), cell: ({ row }: any) => arDate(row.original.date) },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }: any) => (
       <ActionButtons actions={[
-        { icon: Eye, label: 'عرض تفاصيل السحب', onClick: () => navigate('/merchant/records/withdrawal/' + row.original.id) },
-        { icon: XCircle, label: 'إلغاء طلب السحب', variant: 'destructive', onClick: () => setCancelling(row.original.id), hidden: row.original.status !== 'معلق' },
+        { icon: Eye, label: t('عرض تفاصيل السحب'), onClick: () => navigate('/merchant/records/withdrawal/' + row.original.id) },
+        { icon: XCircle, label: t('إلغاء طلب السحب'), variant: 'destructive', onClick: () => setCancelling(row.original.id), hidden: row.original.status !== 'معلق' },
       ]} />) },
   ] as ColumnDef<any, unknown>[]
   return (
@@ -248,7 +287,22 @@ function WdTab() {
     </div>
   )
 }
+
+export function MerchantWithdrawalsPage() {
+  return <WdTab />
+}
+
+export function MerchantSubscriptionsPage() {
+  return <SubsTab />
+}
+
+export function MerchantInvoicesPage() {
+  return <InvTab />
+}
+
 function SubsTab() {
+
+
   const t = useT()
   const user = useAuthStore(s => s.user)
   const qc = useQueryClient()
@@ -344,11 +398,11 @@ function InvTab() {
   }
   const columns = [
     { accessorKey: 'ref', header: t('مرجع الفاتورة'), cell: ({ row }: any) => <b dir="ltr">{row.original.ref}</b> },
-    { accessorKey: 'period', header: t('فترة الفاتورة') },
+    { accessorKey: 'period', header: t('فترة الفاتورة'), cell: ({ row }: any) => t(row.original.period) },
     { id: 'total', header: t('الإجمالي'), cell: ({ row }: any) => money(row.original.total) },
     { id: 'status', header: t('الحالة'), cell: ({ row }: any) => <StatusBadge value={row.original.status} /> },
-    { accessorKey: 'due', header: t('تاريخ الاستحقاق') },
-    { accessorKey: 'gen', header: t('تاريخ التوليد') },
+    { accessorKey: 'due', header: t('تاريخ الاستحقاق'), cell: ({ row }: any) => arDate(row.original.due) },
+    { accessorKey: 'gen', header: t('تاريخ التوليد'), cell: ({ row }: any) => arDate(row.original.gen) },
     { id: 'actions', header: t('إجراءات'), cell: ({ row }: any) => (
       <ActionButtons actions={[
         { icon: Eye, label: t('عرض تفاصيل الفاتورة'), onClick: () => navigate('/merchant/records/invoice/' + row.original.ref) },

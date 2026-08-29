@@ -11,6 +11,7 @@ import { Breadcrumbs } from './breadcrumbs'
 import { audit } from '@/services/audit.service'
 import { cn, initials } from '@/lib/utils'
 import { BrandLogo } from '@/components/brand-logo'
+import { LanguageToggle } from '@/components/language-toggle'
 import { useT } from '@/lib/i18n'
 import { LayoutDashboard, ShieldCheck, Store, Tags, Layers, Warehouse, BarChart3, ShoppingCart, Undo2, Banknote, Wallet, FileText, Wrench, RefreshCw, Settings, ScrollText, Bell, Menu, LogOut, User, type LucideIcon } from 'lucide-react'
 const TITLES: Record<string, string> = {
@@ -132,11 +133,12 @@ export function AppShell() {
             </div>
           </div>
           <div className="ms-auto flex items-center gap-2">
+            <LanguageToggle />
             <NotificationsPopover />
             <div className="relative">
               <button onClick={() => setMenuOpen(o => !o)} className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent" aria-label={t('قائمة الحساب')}>
                 <Avatar className="size-8"><AvatarFallback className="bg-foreground text-background">{initials(user?.name ?? '')}</AvatarFallback></Avatar>
-                <span className="hidden text-[13px] font-extrabold md:block">{user?.name}</span>
+                <span className="hidden text-[13px] font-extrabold md:block">{t(user?.name ?? '')}</span>
               </button>
               {menuOpen && (
                 <>

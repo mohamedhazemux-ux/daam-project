@@ -11,18 +11,24 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { PrefsApplier } from '@/components/prefs-applier'
 
 // ── Merchant Portal ─────────────────────────────────────────────────────────
-const MerchantDashboardPage    = lazy(() => import('@/features/merchant/merchant-dashboard-page'))
-const MerchantProfilePage      = lazy(() => import('@/features/merchant/merchant-profile-page'))
-const MerchantProductsPage     = lazy(() => import('@/features/merchant/merchant-products-page'))
-const MerchantInventoryPage    = lazy(() => import('@/features/merchant/merchant-inventory-page'))
-const MerchantOrdersPage       = lazy(() => import('@/features/merchant/merchant-orders-page'))
-const MerchantReturnsPage      = lazy(() => import('@/features/merchant/merchant-returns-page'))
-const MerchantWalletPage       = lazy(() => import('@/features/merchant/merchant-wallet-page'))
-const MerchantServicesPage     = lazy(() => import('@/features/merchant/merchant-services-page'))
-const MerchantNotificationsPage = lazy(() => import('@/features/merchant/merchant-notifications-page'))
-const MerchantReportsPage      = lazy(() => import('@/features/merchant/merchant-reports-page'))
-const MerchantSettingsPage     = lazy(() => import('@/features/merchant/merchant-settings-page'))
-const MerchantRecordDetailPage = lazy(() => import('@/features/merchant/merchant-record-detail-page'))
+const MerchantDashboardPage        = lazy(() => import('@/features/merchant/merchant-dashboard-page'))
+const MerchantProfilePage          = lazy(() => import('@/features/merchant/merchant-profile-page'))
+const MerchantProductsPage         = lazy(() => import('@/features/merchant/merchant-products-page'))
+const MerchantStockLevelsPage      = lazy(() => import('@/features/merchant/merchant-inventory-page').then(m => ({ default: m.MerchantStockLevelsPage })))
+const MerchantStockRequestsPage    = lazy(() => import('@/features/merchant/merchant-inventory-page').then(m => ({ default: m.MerchantStockRequestsPage })))
+const MerchantStorageUsagePage     = lazy(() => import('@/features/merchant/merchant-inventory-page').then(m => ({ default: m.MerchantStorageUsagePage })))
+const MerchantOrdersPage           = lazy(() => import('@/features/merchant/merchant-orders-page'))
+const MerchantReturnsPage          = lazy(() => import('@/features/merchant/merchant-returns-page'))
+const MerchantWalletPage           = lazy(() => import('@/features/merchant/merchant-wallet-page'))
+const MerchantWithdrawalsPage      = lazy(() => import('@/features/merchant/merchant-wallet-page').then(m => ({ default: m.MerchantWithdrawalsPage })))
+const MerchantInvoicesPage         = lazy(() => import('@/features/merchant/merchant-wallet-page').then(m => ({ default: m.MerchantInvoicesPage })))
+const MerchantSubscriptionsPage    = lazy(() => import('@/features/merchant/merchant-wallet-page').then(m => ({ default: m.MerchantSubscriptionsPage })))
+const MerchantServicesPage         = lazy(() => import('@/features/merchant/merchant-services-page'))
+const MerchantNotificationsPage     = lazy(() => import('@/features/merchant/merchant-notifications-page'))
+const MerchantReportsPage          = lazy(() => import('@/features/merchant/merchant-reports-page'))
+const MerchantSettingsPage         = lazy(() => import('@/features/merchant/merchant-settings-page'))
+const MerchantRecordDetailPage     = lazy(() => import('@/features/merchant/merchant-record-detail-page'))
+
 
 // ── Admin Portal ─────────────────────────────────────────────────────────────
 const DashboardPage        = lazy(() => import('@/features/dashboard/dashboard-page'))
@@ -72,18 +78,26 @@ export function AppRouter() {
 
         {/* ── Merchant Portal ─────────────────────────────────────────────── */}
         <Route element={<MerchantProtectedRoute><MerchantShell /></MerchantProtectedRoute>}>
-          <Route path="/merchant"                  element={<Lz C={MerchantDashboardPage} />} />
-          <Route path="/merchant/profile"          element={<Lz C={MerchantProfilePage} />} />
-          <Route path="/merchant/products"         element={<Lz C={MerchantProductsPage} />} />
-          <Route path="/merchant/inventory"        element={<Lz C={MerchantInventoryPage} />} />
-          <Route path="/merchant/orders"           element={<Lz C={MerchantOrdersPage} />} />
-          <Route path="/merchant/returns"          element={<Lz C={MerchantReturnsPage} />} />
-          <Route path="/merchant/wallet"           element={<Lz C={MerchantWalletPage} />} />
-          <Route path="/merchant/services"         element={<Lz C={MerchantServicesPage} />} />
-          <Route path="/merchant/notifications"    element={<Lz C={MerchantNotificationsPage} />} />
-          <Route path="/merchant/reports"          element={<Lz C={MerchantReportsPage} />} />
-          <Route path="/merchant/settings"         element={<Lz C={MerchantSettingsPage} />} />
-          <Route path="/merchant/records/:kind/:id" element={<Lz C={MerchantRecordDetailPage} />} />
+          <Route path="/merchant"                           element={<Lz C={MerchantDashboardPage} />} />
+          <Route path="/merchant/profile"                   element={<Lz C={MerchantProfilePage} />} />
+          <Route path="/merchant/products"                  element={<Lz C={MerchantProductsPage} />} />
+          <Route path="/merchant/inventory"                 element={<Lz C={MerchantStockLevelsPage} />} />
+          <Route path="/merchant/inventory/levels"          element={<Lz C={MerchantStockLevelsPage} />} />
+          <Route path="/merchant/inventory/requests"        element={<Lz C={MerchantStockRequestsPage} />} />
+          <Route path="/merchant/inventory/storage"         element={<Lz C={MerchantStorageUsagePage} />} />
+          <Route path="/merchant/orders"                    element={<Lz C={MerchantOrdersPage} />} />
+          <Route path="/merchant/returns"                   element={<Lz C={MerchantReturnsPage} />} />
+          <Route path="/merchant/wallet"                    element={<Lz C={MerchantWalletPage} />} />
+          <Route path="/merchant/finance/wallet"            element={<Lz C={MerchantWalletPage} />} />
+          <Route path="/merchant/finance/withdrawals"       element={<Lz C={MerchantWithdrawalsPage} />} />
+          <Route path="/merchant/finance/invoices"          element={<Lz C={MerchantInvoicesPage} />} />
+          <Route path="/merchant/services"                  element={<Lz C={MerchantServicesPage} />} />
+          <Route path="/merchant/services/requests"         element={<Lz C={MerchantServicesPage} />} />
+          <Route path="/merchant/services/subscriptions"    element={<Lz C={MerchantSubscriptionsPage} />} />
+          <Route path="/merchant/notifications"             element={<Lz C={MerchantNotificationsPage} />} />
+          <Route path="/merchant/reports"                   element={<Lz C={MerchantReportsPage} />} />
+          <Route path="/merchant/settings"                  element={<Lz C={MerchantSettingsPage} />} />
+          <Route path="/merchant/records/:kind/:id"          element={<Lz C={MerchantRecordDetailPage} />} />
         </Route>
 
         {/* ── Admin Portal ────────────────────────────────────────────────── */}

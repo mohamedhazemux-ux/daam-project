@@ -7,18 +7,47 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const money = (n: number) =>
-  `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`
+export const money = (n: number) => {
+  let lang = usePrefsStore.getState()?.lang
+  if (!lang && typeof document !== 'undefined') {
+    lang = document.documentElement.lang === 'en' || document.documentElement.getAttribute('dir') === 'ltr' ? 'en' : 'ar'
+  }
+  if (!lang) lang = 'ar'
+  const formatted = Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return lang === 'en' ? `${formatted} SAR` : `${formatted} ﷼`
+}
 
-export const MONTHS = [
+export const MONTHS_AR = [
   'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
 ]
 
-export const arDate = (d: string) => {
+export const MONTHS_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
+export const MONTHS = MONTHS_AR
+
+export const arDate = (d: string, targetLang?: string) => {
   if (!d || d === '—') return '—'
-  const [y, m, dd] = d.split('-')
-  return `${+dd} ${MONTHS[+m - 1]} ${y}`
+  const cleanD = String(d).split('T')[0]
+  const parts = cleanD.split('-')
+  if (parts.length < 3) return d
+  const [y, m, dd] = parts
+  const mNum = parseInt(m, 10)
+  if (isNaN(mNum) || mNum < 1 || mNum > 12) return d
+
+  let lang = targetLang || usePrefsStore.getState()?.lang
+  if (!lang && typeof document !== 'undefined') {
+    lang = document.documentElement.lang === 'en' || document.documentElement.getAttribute('dir') === 'ltr' ? 'en' : 'ar'
+  }
+  if (!lang) lang = 'ar'
+
+  if (lang === 'en') {
+    return `${parseInt(dd, 10)} ${MONTHS_EN[mNum - 1]} ${y}`
+  }
+  return `${parseInt(dd, 10)} ${MONTHS_AR[mNum - 1]} ${y}`
 }
 
 export const initials = (name: string) => {

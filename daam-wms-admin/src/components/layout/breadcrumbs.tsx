@@ -50,17 +50,25 @@ const RECORD_KIND_MAP: Record<string, { section: string; pageTitle: string; list
 }
 
 const MERCHANT_ROUTES: Record<string, RouteMapping> = {
-  '/merchant': { section: 'بوابة التجار', title: 'لوحة التحكم', to: '/merchant' },
-  '/merchant/orders': { section: 'بوابة التجار', title: 'الطلبات', to: '/merchant/orders' },
-  '/merchant/products': { section: 'بوابة التجار', title: 'المنتجات', to: '/merchant/products' },
-  '/merchant/inventory': { section: 'بوابة التجار', title: 'المخزون', to: '/merchant/inventory' },
-  '/merchant/returns': { section: 'بوابة التجار', title: 'المرتجعات', to: '/merchant/returns' },
-  '/merchant/wallet': { section: 'بوابة التجار', title: 'المحفظة والمالية', to: '/merchant/wallet' },
-  '/merchant/services': { section: 'بوابة التجار', title: 'طلبات الخدمة', to: '/merchant/services' },
-  '/merchant/notifications': { section: 'بوابة التجار', title: 'مركز الإشعارات', to: '/merchant/notifications' },
-  '/merchant/reports': { section: 'بوابة التجار', title: 'التقارير والتحليلات', to: '/merchant/reports' },
-  '/merchant/settings': { section: 'بوابة التجار', title: 'الإعدادات', to: '/merchant/settings' },
-  '/merchant/profile': { section: 'بوابة التجار', title: 'الملف الشخصي', to: '/merchant/profile' },
+  '/merchant': { section: 'الرئيسية', title: 'لوحة التحكم', to: '/merchant' },
+  '/merchant/products': { section: 'المخزون', title: 'المنتجات', to: '/merchant/products' },
+  '/merchant/inventory': { section: 'المخزون', title: 'مستويات المخزون', to: '/merchant/inventory/levels' },
+  '/merchant/inventory/levels': { section: 'المخزون', title: 'مستويات المخزون', to: '/merchant/inventory/levels' },
+  '/merchant/inventory/requests': { section: 'المخزون', title: 'طلبات المخزون', to: '/merchant/inventory/requests' },
+  '/merchant/inventory/storage': { section: 'المخزون', title: 'استخدام التخزين', to: '/merchant/inventory/storage' },
+  '/merchant/orders': { section: 'العمليات', title: 'الطلبات', to: '/merchant/orders' },
+  '/merchant/returns': { section: 'العمليات', title: 'المرتجعات', to: '/merchant/returns' },
+  '/merchant/wallet': { section: 'المالية', title: 'المحفظة', to: '/merchant/finance/wallet' },
+  '/merchant/finance/wallet': { section: 'المالية', title: 'المحفظة', to: '/merchant/finance/wallet' },
+  '/merchant/finance/withdrawals': { section: 'المالية', title: 'طلبات السحب', to: '/merchant/finance/withdrawals' },
+  '/merchant/finance/invoices': { section: 'المالية', title: 'الفواتير', to: '/merchant/finance/invoices' },
+  '/merchant/services': { section: 'الخدمات', title: 'طلبات الخدمة', to: '/merchant/services/requests' },
+  '/merchant/services/requests': { section: 'الخدمات', title: 'طلبات الخدمة', to: '/merchant/services/requests' },
+  '/merchant/services/subscriptions': { section: 'الخدمات', title: 'الاشتراكات', to: '/merchant/services/subscriptions' },
+  '/merchant/reports': { section: 'النظام', title: 'التقارير', to: '/merchant/reports' },
+  '/merchant/settings': { section: 'النظام', title: 'الإعدادات', to: '/merchant/settings' },
+  '/merchant/notifications': { section: 'النظام', title: 'الإشعارات', to: '/merchant/notifications' },
+  '/merchant/profile': { section: 'الحساب', title: 'الملف الشخصي', to: '/merchant/profile' },
 }
 
 export function Breadcrumbs({ portal = 'admin' }: { portal?: 'admin' | 'merchant' }) {
@@ -74,22 +82,25 @@ export function Breadcrumbs({ portal = 'admin' }: { portal?: 'admin' | 'merchant
   const SepIcon = isRtl ? ChevronLeft : ChevronRight
 
   if (portal === 'merchant') {
-    items.push({ label: 'بوابة التجار', to: '/merchant' })
+    items.push({ label: 'الرئيسية', to: '/merchant' })
     if (path.startsWith('/merchant/records/')) {
       const parts = path.split('/')
       const kind = parts[3]
       const recordId = parts[4]
-      const merchantKindMap: Record<string, { pageTitle: string; listPath: string }> = {
-        order: { pageTitle: 'الطلبات', listPath: '/merchant/orders' },
-        product: { pageTitle: 'المنتجات', listPath: '/merchant/products' },
-        return: { pageTitle: 'المرتجعات', listPath: '/merchant/returns' },
-        'stock-request': { pageTitle: 'المخزون', listPath: '/merchant/inventory' },
-        'service-request': { pageTitle: 'طلبات الخدمة', listPath: '/merchant/services' },
-        withdrawal: { pageTitle: 'المحفظة والمالية', listPath: '/merchant/wallet' },
-        invoice: { pageTitle: 'المحفظة والمالية', listPath: '/merchant/wallet' },
+      const merchantKindMap: Record<string, { section: string; pageTitle: string; listPath: string }> = {
+        order: { section: 'العمليات', pageTitle: 'الطلبات', listPath: '/merchant/orders' },
+        product: { section: 'المخزون', pageTitle: 'المنتجات', listPath: '/merchant/products' },
+        return: { section: 'العمليات', pageTitle: 'المرتجعات', listPath: '/merchant/returns' },
+        'stock-request': { section: 'المخزون', pageTitle: 'طلبات المخزون', listPath: '/merchant/inventory/requests' },
+        'service-request': { section: 'الخدمات', pageTitle: 'طلبات الخدمة', listPath: '/merchant/services/requests' },
+        withdrawal: { section: 'المالية', pageTitle: 'طلبات السحب', listPath: '/merchant/finance/withdrawals' },
+        invoice: { section: 'المالية', pageTitle: 'الفواتير', listPath: '/merchant/finance/invoices' },
       }
       const kindInfo = merchantKindMap[kind]
       if (kindInfo) {
+        if (kindInfo.section !== 'الرئيسية') {
+          items.push({ label: kindInfo.section })
+        }
         items.push({ label: kindInfo.pageTitle, to: kindInfo.listPath })
         if (recordId) {
           items.push({ label: decodeURIComponent(recordId) })
@@ -97,13 +108,19 @@ export function Breadcrumbs({ portal = 'admin' }: { portal?: 'admin' | 'merchant
       }
     } else {
       const matched = MERCHANT_ROUTES[path]
-      if (matched && path !== '/merchant') {
-        items.push({ label: matched.title })
-      } else if (path === '/merchant') {
-        items.push({ label: 'لوحة التحكم' })
+      if (matched) {
+        if (matched.section !== 'الرئيسية') {
+          items.push({ label: matched.section })
+        }
+        if (path !== '/merchant') {
+          items.push({ label: matched.title })
+        } else {
+          items.push({ label: 'لوحة التحكم' })
+        }
       }
     }
   } else {
+
     // Admin Portal
     items.push({ label: 'الرئيسية', to: '/' })
 
